@@ -1,4 +1,4 @@
-package com.reactnativecommunity.adyendropin;
+package com.reactnative.adyendropin;
 
 import androidx.annotation.NonNull;
 
