@@ -173,7 +173,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         resultMap.putString("encryptedNumber", encryptedCard.getEncryptedNumber());
         resultMap.putString("encryptedExpiryMonth", encryptedCard.getEncryptedExpiryMonth());
         resultMap.putString("encryptedExpiryYear", encryptedCard.getEncryptedExpiryYear());
-        resultMap.putString("encryptedSecurityCode", encryptedCard.getEncryptedSecurityCode());
+        resultMap.putString("encryptedSecurityCode", "20"+encryptedCard.getEncryptedSecurityCode());
         promise.resolve(resultMap);
     }
 
