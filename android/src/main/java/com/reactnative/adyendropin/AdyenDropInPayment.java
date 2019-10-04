@@ -6,19 +6,28 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
+import com.adyen.checkout.adyen3ds2.Adyen3DS2Component;
 import com.adyen.checkout.base.ActionComponentData;
 import com.adyen.checkout.base.ComponentError;
 import com.adyen.checkout.base.PaymentComponentState;
+import com.adyen.checkout.base.component.BaseActionComponent;
 import com.adyen.checkout.base.model.PaymentMethodsApiResponse;
 import com.adyen.checkout.base.model.paymentmethods.PaymentMethod;
 import com.adyen.checkout.base.model.paymentmethods.RecurringDetail;
 import com.adyen.checkout.base.model.payments.request.PaymentMethodDetails;
+import com.adyen.checkout.base.model.payments.response.Action;
+import com.adyen.checkout.base.model.payments.response.QrCodeAction;
+import com.adyen.checkout.base.model.payments.response.RedirectAction;
+import com.adyen.checkout.base.model.payments.response.Threeds2ChallengeAction;
+import com.adyen.checkout.base.model.payments.response.Threeds2FingerprintAction;
+import com.adyen.checkout.base.model.payments.response.VoucherAction;
 import com.adyen.checkout.card.CardComponent;
 import com.adyen.checkout.card.CardConfiguration;
 import com.adyen.checkout.core.api.Environment;
 import com.adyen.checkout.dropin.DropIn;
 import com.adyen.checkout.dropin.DropInConfiguration;
 import com.adyen.checkout.dropin.service.CallResult;
+import com.adyen.checkout.redirect.RedirectComponent;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
@@ -213,7 +222,44 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         if (isDropIn) {
             CallResult callResult = new CallResult(CallResult.ResultType.ACTION, actionJson);
             dropInService.handleAsyncCallback(callResult);
+            return;
         }
+        if (actionJson == null || actionJson.length() <= 0) {
+            return;
+        }
+        try {
+            BaseActionComponent actionComponent = null;
+            Action action = Action.SERIALIZER.deserialize(new JSONObject(actionJson));
+            switch (action.getType()) {
+                case RedirectAction.ACTION_TYPE:
+                    actionComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                    actionComponent.handleAction(this.getCurrentActivity(), action);
+                    break;
+                case Threeds2FingerprintAction.ACTION_TYPE:
+                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                    actionComponent.handleAction(this.getCurrentActivity(), action);
+                    break;
+                case Threeds2ChallengeAction.ACTION_TYPE:
+                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                    actionComponent.handleAction(this.getCurrentActivity(), action);
+                    break;
+                case QrCodeAction.ACTION_TYPE:
+                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                    actionComponent.handleAction(this.getCurrentActivity(), action);
+                    break;
+                case VoucherAction.ACTION_TYPE:
+                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                    actionComponent.handleAction(this.getCurrentActivity(), action);
+                    break;
+                default:
+                    break;
+            }
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     @NonNull
@@ -222,9 +268,6 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         return AdyenDropInPayment.class.getSimpleName();
     }
 
-    AdyenDropInPaymentService getDropInService() {
-        return null;
-    }
 
     public void handlePaymentSubmit(PaymentComponentState paymentComponentState) {
         if (paymentComponentState.isValid()) {
