@@ -1,9 +1,11 @@
 package com.reactnative.adyendropin;
 
 import android.content.Intent;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
+
 import com.adyen.checkout.base.ComponentError;
 import com.adyen.checkout.base.PaymentComponentState;
 import com.adyen.checkout.base.model.PaymentMethodsApiResponse;
@@ -18,6 +20,7 @@ import com.adyen.checkout.dropin.DropInConfiguration;
 import com.adyen.checkout.dropin.service.CallResult;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -110,7 +113,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void paymentMethods(String paymentMethodsJson) {
-        
+
         CardConfiguration cardConfiguration =
                 new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey)
                         .build();
@@ -156,7 +159,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         this.getCurrentActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                final CardComponent cardComponent =new CardComponent(paymentMethod,cardConfiguration);
+                final CardComponent cardComponent = new CardComponent(paymentMethod, cardConfiguration);
                 CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment);
                 cardComponentDialogFragment.setPaymentMethod(paymentMethod);
                 cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
@@ -170,41 +173,30 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void storedCardPaymentMethod(String paymentMethodsJson, Integer index) {
-
+        final AdyenDropInPayment adyenDropInPayment = this;
         JSONObject jsonObject = null;
-
         try {
-
             jsonObject = new JSONObject(paymentMethodsJson);
         } catch (JSONException e) {
             e.printStackTrace();
         }
         PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
-
         CardConfiguration cardConfiguration =
                 new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey)
                         .build();
         this.cardConfiguration = cardConfiguration;
-        final AdyenDropInPayment adyenDropInPayment = this;
         RecurringDetail paymentMethod = this.getStoredCardPaymentMethod(paymentMethodsApiResponse, index);
         this.getCurrentActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 final CardComponent cardComponent = new CardComponent(paymentMethod, cardConfiguration);
-                // CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment);
-                // cardComponentDialogFragment.setPaymentMethod(paymentMethod);
-                // cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
-                // cardComponentDialogFragment.setComponent(cardComponent);
-                // cardComponentDialogFragment.setCancelable(true);
-                // cardComponentDialogFragment.setShowsDialog(true);
-
-//                Intent intent=new Intent(adyenDropInPayment.getCurrentActivity(), CardComponentActivity.class);
-//                intent.putExtra("cardConfiguration",cardConfiguration);
-//                intent.putExtra("paymentMethod",paymentMethod);
-                //adyenDropInPayment.getCurrentActivity().startActivity(intent);
-//                CardComponentBottomSheet bottomSheet= CardComponentBottomSheet.newInstance(1);
-//                cardView.attach(cardComponent, bottomSheet);
-                // cardComponentDialogFragment.show(((FragmentActivity) adyenDropInPayment.getCurrentActivity()).getSupportFragmentManager());
+                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment);
+                cardComponentDialogFragment.setPaymentMethod(paymentMethod);
+                cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
+                cardComponentDialogFragment.setComponent(cardComponent);
+                cardComponentDialogFragment.setCancelable(true);
+                cardComponentDialogFragment.setShowsDialog(true);
+                cardComponentDialogFragment.show(((FragmentActivity) adyenDropInPayment.getCurrentActivity()).getSupportFragmentManager());
 
             }
         });
