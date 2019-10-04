@@ -34,7 +34,7 @@ public class CustomCardUtils {
 
     public static void setFilteredCard(CardListAdapter cardListAdapter, List<CardType> filteredCards) {
         cardListAdapter.setFilteredCard(filteredCards);
-        //cardListAdapter.notifyDataSetChanged();
+        cardListAdapter.notifyDataSetChanged();
     }
 
     public static List<CardType> getSupportedFilterCards(CardComponent cardComponent,String cardNumber){
