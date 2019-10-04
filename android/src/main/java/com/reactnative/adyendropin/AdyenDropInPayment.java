@@ -141,13 +141,8 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     public void cardPaymentMethod(String paymentMethodsJson, String name, Boolean showHolderField, Boolean showStoreField) {
 
         final AdyenDropInPayment adyenDropInPayment = this;
-//        ViewStub viewStub= this.getCurrentActivity().findViewById(R.id.adyenCardViewViewStub);
-//        final CardView cardView = (CardView) viewStub.inflate();
-        //final CardView cardView  = this.getCurrentActivity().findViewById(R.id.adyenCardView) ;
         JSONObject jsonObject = null;
-
         try {
-            Log.i("data", paymentMethodsJson);
             jsonObject = new JSONObject(paymentMethodsJson);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -156,45 +151,21 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
                 new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey).setHolderNameRequire(showHolderField).setShowStorePaymentField(showStoreField)
                         .build();
         this.cardConfiguration = cardConfiguration;
-        Intent resultIntent = new Intent(this.getCurrentActivity(), this.getCurrentActivity().getClass());
-        resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        this.dropInConfiguration = new DropInConfiguration.Builder(this.getCurrentActivity(), resultIntent, AdyenDropInPaymentService.class).addCardConfiguration(cardConfiguration).build();
-
         PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
-
-        // When you're ready to accept live payments, change the value to one of our live environments.
-
-        this.cardConfiguration = cardConfiguration;
         final PaymentMethod paymentMethod = adyenDropInPayment.getCardPaymentMethod(paymentMethodsApiResponse, name);
-
-//        final CardView cardView = new CardView(adyenDropInPayment.getCurrentActivity());
-//        cardView.setVisibility(View.VISIBLE);
-//        cardView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-//                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-
         this.getCurrentActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                final CardComponent cardComponent = new CardComponent(paymentMethod, cardConfiguration);
-
-                // CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment);
-                // cardComponentDialogFragment.setPaymentMethod(paymentMethod);
-                // cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
-                // cardComponentDialogFragment.setComponent(cardComponent);
-                // cardComponentDialogFragment.setCancelable(true);
-                // cardComponentDialogFragment.setShowsDialog(true);
-
-//                Intent intent=new Intent(adyenDropInPayment.getCurrentActivity(), CardComponentActivity.class);
-//                intent.putExtra("cardConfiguration",cardConfiguration);
-//                intent.putExtra("paymentMethod",paymentMethod);
-                //adyenDropInPayment.getCurrentActivity().startActivity(intent);
-//                CardComponentBottomSheet bottomSheet= CardComponentBottomSheet.newInstance(1);
-//                cardView.attach(cardComponent, bottomSheet);
-                // cardComponentDialogFragment.show(((FragmentActivity) adyenDropInPayment.getCurrentActivity()).getSupportFragmentManager());
-
+                final CardComponent cardComponent =new CardComponent(paymentMethod,cardConfiguration);
+                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment);
+                cardComponentDialogFragment.setPaymentMethod(paymentMethod);
+                cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
+                cardComponentDialogFragment.setComponent(cardComponent);
+                cardComponentDialogFragment.setCancelable(true);
+                cardComponentDialogFragment.setShowsDialog(true);
+                cardComponentDialogFragment.show(((FragmentActivity) adyenDropInPayment.getCurrentActivity()).getSupportFragmentManager());
             }
         });
-
     }
 
     @ReactMethod
