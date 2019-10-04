@@ -32,7 +32,7 @@ public class AdyenDropInPaymentService extends DropInService {
             return new CallResult(CallResult.ResultType.FINISHED, "");
         }
         PaymentComponentData paymentComponentData = PaymentComponentData.SERIALIZER.deserialize(jsonObject);
-        PaymentComponentState paymentComponentState = new PaymentComponentState(paymentComponentData, false);
+        PaymentComponentState paymentComponentState = new PaymentComponentState(paymentComponentData, true);
         if (AdyenDropInPayment.INSTANCE != null) {
             AdyenDropInPayment.INSTANCE.handlePaymentSubmit(paymentComponentState);
         }

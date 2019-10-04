@@ -346,7 +346,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            eventData.putBoolean("isDropIn", false);
+            eventData.putBoolean("isDropIn", this.isDropIn);
             eventData.putString("env", this.envName);
             eventData.putMap("data", data);
             this.sendEvent(this.getReactApplicationContext(), "onPaymentSubmit", eventData);
@@ -362,7 +362,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             e.printStackTrace();
         }
         WritableMap resultData = new WritableNativeMap();
-        resultData.putBoolean("isDropIn", false);
+        resultData.putBoolean("isDropIn", this.isDropIn);
         resultData.putString("env", this.envName);
         resultData.putString("msg", "");
         resultData.putMap("data", data);
@@ -371,7 +371,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     void handlePaymentError(ComponentError componentError) {
         WritableMap resultData = new WritableNativeMap();
-        resultData.putBoolean("isDropIn", false);
+        resultData.putBoolean("isDropIn", this.isDropIn);
         resultData.putString("env", this.envName);
         resultData.putString("msg", componentError.getErrorMessage());
         resultData.putString("error", componentError.getException().getMessage());
