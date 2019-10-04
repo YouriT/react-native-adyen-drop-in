@@ -11,6 +11,10 @@ import com.adyen.checkout.dropin.service.DropInService;
 import org.json.JSONObject;
 
 public class AdyenDropInPaymentService extends DropInService {
+    public AdyenDropInPaymentService() {
+        AdyenDropInPayment.dropInService = this;
+    }
+
     @Override
     public CallResult makeDetailsCall(JSONObject jsonObject) {
         if (jsonObject == null) {

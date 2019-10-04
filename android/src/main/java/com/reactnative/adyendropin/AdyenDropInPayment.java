@@ -5,6 +5,8 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.Observer;
 
 import com.adyen.checkout.adyen3ds2.Adyen3DS2Component;
 import com.adyen.checkout.base.ActionComponentData;
@@ -41,6 +43,8 @@ import android.util.Log;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     CardConfiguration cardConfiguration;
@@ -49,7 +53,8 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     Environment environment;
     String envName;
     boolean isDropIn;
-    AdyenDropInPaymentService dropInService = new AdyenDropInPaymentService();
+    static Map<String, BaseActionComponent> ACTION_COMPONENT_MAP = new ConcurrentHashMap<>();
+    public static AdyenDropInPaymentService dropInService;
     public static AdyenDropInPayment INSTANCE = null;
 
 
@@ -227,6 +232,52 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         }
     }
 
+    BaseActionComponent getActionComponent(Action action) {
+        if (ACTION_COMPONENT_MAP.containsKey(action.getType())) {
+            return ACTION_COMPONENT_MAP.get(action.getType());
+        }
+        BaseActionComponent actionComponent = null;
+        switch (action.getType()) {
+            case RedirectAction.ACTION_TYPE:
+                actionComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                break;
+            case Threeds2FingerprintAction.ACTION_TYPE:
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                break;
+            case Threeds2ChallengeAction.ACTION_TYPE:
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                break;
+            case QrCodeAction.ACTION_TYPE:
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                break;
+            case VoucherAction.ACTION_TYPE:
+                actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+                break;
+            default:
+                break;
+        }
+        if (actionComponent != null) {
+            final AdyenDropInPayment adyenDropInPayment = this;
+            ACTION_COMPONENT_MAP.put(action.getType(), actionComponent);
+            actionComponent.observe((LifecycleOwner) this.getCurrentActivity(), new Observer<ActionComponentData>() {
+
+                @Override
+                public void onChanged(ActionComponentData actionComponentData) {
+                    adyenDropInPayment.handlePaymentProvide(actionComponentData);
+                }
+            });
+            actionComponent.observeErrors((LifecycleOwner) this.getCurrentActivity(), new Observer<ComponentError>() {
+                @Override
+                public void onChanged(ComponentError componentError) {
+                    adyenDropInPayment.handlePaymentError(componentError);
+                }
+            });
+
+        }
+        return actionComponent;
+
+    }
+
     @ReactMethod
     public void handleAction(String actionJson) {
         if (isDropIn) {
@@ -238,31 +289,11 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             return;
         }
         try {
-            BaseActionComponent actionComponent = null;
+
             Action action = Action.SERIALIZER.deserialize(new JSONObject(actionJson));
-            switch (action.getType()) {
-                case RedirectAction.ACTION_TYPE:
-                    actionComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
-                    actionComponent.handleAction(this.getCurrentActivity(), action);
-                    break;
-                case Threeds2FingerprintAction.ACTION_TYPE:
-                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
-                    actionComponent.handleAction(this.getCurrentActivity(), action);
-                    break;
-                case Threeds2ChallengeAction.ACTION_TYPE:
-                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
-                    actionComponent.handleAction(this.getCurrentActivity(), action);
-                    break;
-                case QrCodeAction.ACTION_TYPE:
-                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
-                    actionComponent.handleAction(this.getCurrentActivity(), action);
-                    break;
-                case VoucherAction.ACTION_TYPE:
-                    actionComponent = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
-                    actionComponent.handleAction(this.getCurrentActivity(), action);
-                    break;
-                default:
-                    break;
+            BaseActionComponent actionComponent = this.getActionComponent(action);
+            if (actionComponent != null) {
+                actionComponent.handleAction(this.getCurrentActivity(), action);
             }
 
         } catch (JSONException e) {
