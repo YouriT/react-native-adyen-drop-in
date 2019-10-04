@@ -239,6 +239,9 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
 
 extension AdyenDropInPayment: ActionComponentDelegate {
   @objc func handleAction(_ actionJson: String) {
+    if(actionJson == nil||actionJson.count<=0){
+        return;
+    }
     if(self.isDropIn!){
       let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
       let action = try? JSONDecoder().decode(Action.self, from: actionData!)
