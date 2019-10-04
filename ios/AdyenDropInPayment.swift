@@ -29,6 +29,7 @@ class AdyenDropInPayment: RCTEventEmitter {
   var threeDS2Component: ThreeDS2Component?
   var publicKey: String?
   var env: Environment?
+  var isDropIn:Bool?
   var envName: String?
   var configuration: DropInComponent.PaymentMethodsConfiguration?
   override func supportedEvents() -> [String]! {
@@ -56,6 +57,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
   }
 
   @objc func paymentMethods(_ paymentMethodsJson: String) {
+    self.isDropIn = true
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
     let dropInComponent = DropInComponent(paymentMethods: paymentMethods!,
@@ -79,7 +81,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
     sendEvent(
       withName: "onPaymentSubmit",
       body: [
-        "isDropIn": true,
+        "isDropIn": self.isDropIn,
         "env": self.envName,
         "data": resultData,
       ]
@@ -97,7 +99,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
     sendEvent(
       withName: "onPaymentProvide",
       body: [
-        "isDropIn": true,
+        "isDropIn": self.isDropIn,
         "env": self.envName,
         "data": resultData,
       ]
@@ -114,7 +116,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
     sendEvent(
       withName: "onPaymentFail",
       body: [
-        "isDropIn": true,
+        "isDropIn": self.isDropIn,
         "env": self.envName,
         "msg": error.localizedDescription,
         "error": String(describing: error),
@@ -152,6 +154,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
   }
 
   @objc func storedCardPaymentMethod(_ paymentMethodsJson: String, index: Int) {
+    self.isDropIn = false
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
     let cardPaymentMethod: StoredCardPaymentMethod? = getStoredCardPaymentMethod(paymentMethods!, index: index)
@@ -170,6 +173,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
   }
 
   @objc func cardPaymentMethod(_ paymentMethodsJson: String, name: String, showHolderField: Bool, showStoreField: Bool) {
+    self.isDropIn = false
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
     let cardPaymentMethod: CardPaymentMethod? = getCardPaymentMethodByName(paymentMethods!, name: name)
@@ -206,7 +210,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     sendEvent(
       withName: "onPaymentSubmit",
       body: [
-        "isDropIn": false,
+        "isDropIn": self.isDropIn,
         "env": self.envName,
         "data": resultData,
       ]
@@ -224,7 +228,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     sendEvent(
       withName: "onPaymentFail",
       body: [
-        "isDropIn": false,
+        "isDropIn": self.isDropIn,
         "env": self.envName,
         "msg": error.localizedDescription,
         "error": String(describing: error),
@@ -264,7 +268,7 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     default :
       break;
     }
-  } 
+  }
 
   /// Invoked when the action component finishes
   /// and provides the delegate with the data that was retrieved.
@@ -277,7 +281,7 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     sendEvent(
       withName: "onPaymentProvide",
       body: [
-        "isDropIn": false,
+        "isDropIn": self.isDropIn,
         "env": self.envName,
         "data": resultData,
       ]
@@ -293,7 +297,7 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     sendEvent(
       withName: "onPaymentFail",
       body: [
-        "isDropIn": false,
+        "isDropIn": self.isDropIn,
         "env": self.envName,
         "msg": error.localizedDescription,
         "error": String(describing: error),
