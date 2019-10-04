@@ -29,6 +29,8 @@ RCT_EXTERN_METHOD(cardPaymentMethod:(NSString)paymentMethodsJson name:(NSString 
 //use stored card
 RCT_EXTERN_METHOD(storedCardPaymentMethod:(NSString)paymentMethodsJson index:(NSInteger *) index)
 RCT_EXTERN_METHOD(handleAction:(NSString)actionJson)
+//payment result
+RCT_EXTERN_METHOD(handlePaymentResult:(NSString)paymentResultJson)
 //.redirect: Use the Redirect Component or handle the redirect on your own.
 //RCT_EXTERN_METHOD(handleRedirectAction:(NSString)actionJson)
 //.threeDS2Fingerprint: Use the 3D Secure 2 Component to perform 3D Secure 2 device fingerprinting.

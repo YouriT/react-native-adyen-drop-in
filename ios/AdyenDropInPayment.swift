@@ -272,6 +272,8 @@ extension AdyenDropInPayment: ActionComponentDelegate {
       break;
     }
   }
+  @objc func handlePaymentResult(_ paymentResult: String) {
+  }
 
   /// Invoked when the action component finishes
   /// and provides the delegate with the data that was retrieved.
