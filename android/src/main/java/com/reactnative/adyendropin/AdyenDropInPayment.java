@@ -26,6 +26,9 @@ import com.adyen.checkout.base.model.payments.response.VoucherAction;
 import com.adyen.checkout.card.CardComponent;
 import com.adyen.checkout.card.CardConfiguration;
 import com.adyen.checkout.core.api.Environment;
+import com.adyen.checkout.cse.Card;
+import com.adyen.checkout.cse.EncryptedCard;
+import com.adyen.checkout.cse.Encryptor;
 import com.adyen.checkout.dropin.DropIn;
 import com.adyen.checkout.dropin.DropInConfiguration;
 import com.adyen.checkout.dropin.service.CallResult;
@@ -160,6 +163,21 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void encryptCard(String cardNumber, Integer expiryMonth, Integer expiryYear, String securityCode,final Promise promise) {
+        Card.Builder cardBuilder = new Card.Builder();
+        cardBuilder.setNumber(cardNumber).setExpiryDate(expiryMonth, expiryYear);
+        cardBuilder.setSecurityCode(securityCode);
+        Card card = cardBuilder.build();
+        final EncryptedCard encryptedCard = Encryptor.INSTANCE.encryptFields(card, this.publicKey);
+        WritableMap resultMap = new WritableNativeMap();
+        resultMap.putString("encryptedNumber", encryptedCard.getEncryptedNumber());
+        resultMap.putString("encryptedExpiryMonth", encryptedCard.getEncryptedExpiryMonth());
+        resultMap.putString("encryptedExpiryYear", encryptedCard.getEncryptedExpiryYear());
+        resultMap.putString("encryptedSecurityCode", encryptedCard.getEncryptedSecurityCode());
+        promise.resolve(resultMap);
+    }
+
+    @ReactMethod
     public void cardPaymentMethod(String paymentMethodsJson, String name, Boolean showHolderField, Boolean showStoreField) {
         isDropIn = false;
         final AdyenDropInPayment adyenDropInPayment = this;
@@ -229,7 +247,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             CallResult callResult = new CallResult(CallResult.ResultType.FINISHED, paymentJson);
             dropInService.handleAsyncCallback(callResult);
             try {
-                Thread.sleep(10);
+                Thread.sleep(10);//sleep to wait
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

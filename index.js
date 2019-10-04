@@ -12,7 +12,7 @@ const addListener = (key, listener) => {
         return eventMap[key];
     }
     eventMap[key] = listener;
-    EventEmitter.addListener(key,listener);
+    EventEmitter.addListener(key, listener);
 };
 export default {
     /**
@@ -30,15 +30,15 @@ export default {
      * @returns {*}
      */
     paymentMethods(paymentMethodJson) {
-        if(typeof paymentMethodJson==='object'){
-            paymentMethodJson=JSON.stringify(paymentMethodJson)
+        if (typeof paymentMethodJson === 'object') {
+            paymentMethodJson = JSON.stringify(paymentMethodJson)
         }
         this._validateParam(paymentMethodJson, 'paymentMethods', 'string');
         return AdyenDropIn.paymentMethods(paymentMethodJson);
     },
     cardPaymentMethod(paymentMethodJson, name, showHolderField, showStoreField) {
-        if(typeof paymentMethodJson==='object'){
-            paymentMethodJson=JSON.stringify(paymentMethodJson)
+        if (typeof paymentMethodJson === 'object') {
+            paymentMethodJson = JSON.stringify(paymentMethodJson)
         }
         this._validateParam(paymentMethodJson, 'cardPaymentMethod', 'string');
         showHolderField = showHolderField || false;
@@ -51,8 +51,8 @@ export default {
      * @returns {*}
      */
     storedCardPaymentMethod(paymentMethodJson, index) {
-        if(typeof paymentMethodJson==='object'){
-            paymentMethodJson=JSON.stringify(paymentMethodJson)
+        if (typeof paymentMethodJson === 'object') {
+            paymentMethodJson = JSON.stringify(paymentMethodJson)
         }
         this._validateParam(paymentMethodJson, 'storedCardPaymentMethod', 'string');
         index = index || 0;
@@ -64,21 +64,21 @@ export default {
      * @returns {*}
      */
     handleAction(actionJson) {
-        if(typeof actionJson==='object'){
-            actionJson=JSON.stringify(actionJson)
+        if (typeof actionJson === 'object') {
+            actionJson = JSON.stringify(actionJson)
         }
         this._validateParam(actionJson, 'handleAction', 'string');
         return AdyenDropIn.handleAction(actionJson);
     },
     handlePaymentResult(paymentJson) {
-        if(typeof paymentJson==='object'){
-            paymentJson=JSON.stringify(paymentJson)
+        if (typeof paymentJson === 'object') {
+            paymentJson = JSON.stringify(paymentJson)
         }
         this._validateParam(paymentJson, 'handlePaymentResult', 'string');
         return AdyenDropIn.handlePaymentResult(paymentJson);
     },
-    encryptCard(cardData, publicKey) {
-        return AdyenDropIn.encryptCard(cardData, publicKey);
+    encryptCard(cardNumber, expiryMonth, expiryYear, securityCode) {
+        return AdyenDropIn.encryptCard(cardNumber, expiryMonth, expiryYear, securityCode);
     },
     /**
      *  call when need to do more action
