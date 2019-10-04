@@ -182,7 +182,9 @@ public class CardComponentBottomSheet extends BottomSheetDialogFragment implemen
     @Override
     public void onChanged(PaymentComponentState paymentComponentState) {
         payButton.setEnabled(paymentComponentState != null && paymentComponentState.isValid());
-        payButton.setBackgroundColor(getResources().getColor(R.color.primaryColor));
+        if (payButton.isEnabled()) {
+            payButton.setBackgroundColor(getResources().getColor(R.color.primaryColor));
+        }
     }
 
     private void hideFragmentDialog(String tag) {
