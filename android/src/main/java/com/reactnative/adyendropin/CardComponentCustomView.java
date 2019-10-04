@@ -46,9 +46,9 @@ public class CardComponentCustomView extends LinearLayout implements ComponentVi
 
     @Override
     public void onChanged(CardOutputData cardOutputData) {
-//        if (!cardComponent.isStoredPaymentMethod()) {
-//            cardListAdapter.setFilteredCard(cardComponent.getSupportedFilterCards(cardOutputData.getCardNumberField().getValue()));
-//        }
+        if (!cardComponent.isStoredPaymentMethod()) {
+            CustomCardUtils.setFilteredCard(cardListAdapter, CustomCardUtils.getSupportedFilterCards(cardComponent, cardOutputData.getCardNumberField().getValue()));
+        }
     }
 
     @Override

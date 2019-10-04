@@ -69,7 +69,7 @@
 
             <Button
                 android:id="@+id/customPayButton"
-                style="@style/AdyenCheckout.Button.Colored"
+                style="@style/Adyen.Pay.Button.Colored"
                 android:layout_width="match_parent"
                 android:enabled="false"
                 android:text="@string/pay_button" />
