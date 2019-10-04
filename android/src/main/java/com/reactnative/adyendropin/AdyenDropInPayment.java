@@ -217,6 +217,16 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         });
     }
 
+
+    @ReactMethod
+    public void handlePaymentResult(String paymentJson) {
+        if (isDropIn) {
+            CallResult callResult = new CallResult(CallResult.ResultType.FINISHED, paymentJson);
+            dropInService.handleAsyncCallback(callResult);
+            return;
+        }
+    }
+
     @ReactMethod
     public void handleAction(String actionJson) {
         if (isDropIn) {
