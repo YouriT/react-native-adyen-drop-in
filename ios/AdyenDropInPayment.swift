@@ -55,6 +55,21 @@ extension AdyenDropInPayment: DropInComponentDelegate {
       self.env = .test
     }
   }
+   @objc func encryptCard(_ cardNumber: String,expiryMonth:Int, expiryYear:Int,securityCode:String,resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock)  {
+       let card = CardEncryptor.Card(number: cardNumber,
+                                     securityCode: securityCode,
+                                     expiryMonth:  String(expiryMonth),
+                                     expiryYear: "20" + String(expiryYear))
+     let encryptedCard = CardEncryptor.encryptedCard(for: card, publicKey: self.publicKey!)
+     
+     let resultMap:Dictionary? = [
+       "encryptedNumber":encryptedCard.number,
+       "encryptedExpiryMonth":encryptedCard.expiryMonth,
+       "encryptedExpiryYear":encryptedCard.expiryYear,
+       "encryptedSecurityCode":encryptedCard.securityCode,
+     ]
+     resolve(resultMap)
+   }
 
   @objc func paymentMethods(_ paymentMethodsJson: String) {
     self.isDropIn = true
