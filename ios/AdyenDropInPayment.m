@@ -35,6 +35,6 @@ RCT_EXTERN_METHOD(handleAction:(NSString)actionJson)
 //RCT_EXTERN_METHOD(handleThreeDS2FingerprintAction:(NSString)actionJson)
 //.threeDS2Challenge: Use 3D Secure 2 Component to present a challenge to your shopper.
 //RCT_EXTERN_METHOD(handleThreeDS2ChallengeAction:(NSString)actionJson)
-RCT_EXTERN_METHOD(encryptCard:(NSDictionary *)cardData publicKey:(NSString *) publicKey resolver:(RCTPromiseResolveBlock)resolve
+RCT_EXTERN_METHOD(encryptCard:(NSDictionary *)cardData resolver:(RCTPromiseResolveBlock)resolve
                   rejecter:(RCTPromiseRejectBlock)reject)
 @end

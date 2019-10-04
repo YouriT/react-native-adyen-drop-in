@@ -235,39 +235,36 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
 
 extension AdyenDropInPayment: ActionComponentDelegate {
   @objc func handleAction(_ actionJson: String) {
+    if(self.isDropIn!){
+      let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
+      let action = try? JSONDecoder().decode(Action.self, from: actionData!)
+      dropInComponent?.handle(action!)
+      return;
+    }
     let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
     let action = try? JSONDecoder().decode(Action.self, from: actionData!)
-    dropInComponent?.handle(action!)
-  }
-
-  @objc func handleRedirectAction(_ actionJson: String) {
-    let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
-    let redirectAction = try? JSONDecoder().decode(Action.self, from: actionData!)
-    let redirectComponent: RedirectComponent = RedirectComponent(action: redirectAction as! RedirectAction)
-    redirectComponent.delegate = self
-  }
-
-  func handleThreeDS2FingerprintAction(_ actionJson: String) {
-    let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
-    let action = try? JSONDecoder().decode(Action.self, from: actionData!)
-    if threeDS2Component == nil {
+    switch action {
+    /// Indicates the user should be redirected to a URL.
+    case is RedirectAction:
+       let redirectComponent:RedirectComponent = RedirectComponent(action: action as! RedirectAction)
+       redirectComponent.delegate = self
+      break;
+      /// Indicates a 3D Secure device fingerprint should be taken.
+    case is ThreeDS2FingerprintAction:
       let threeDS2Component = ThreeDS2Component()
       threeDS2Component.delegate = self
-      self.threeDS2Component = threeDS2Component
-    }
-    threeDS2Component!.handle(action as! ThreeDS2FingerprintAction)
-  }
-
-  func handleThreeDS2ChallengeAction(_ actionJson: String) {
-    let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
-    let action = try? JSONDecoder().decode(Action.self, from: actionData!)
-    if threeDS2Component == nil {
+      threeDS2Component.handle(action as! ThreeDS2FingerprintAction)
+      break;
+      /// Indicates a 3D Secure challenge should be presented.
+    case is ThreeDS2ChallengeAction:
       let threeDS2Component = ThreeDS2Component()
       threeDS2Component.delegate = self
-      self.threeDS2Component = threeDS2Component
+      threeDS2Component.handle(action as! ThreeDS2FingerprintAction)
+      break;
+    default :
+      break;
     }
-    threeDS2Component!.handle(action as! ThreeDS2FingerprintAction)
-  }
+  } 
 
   /// Invoked when the action component finishes
   /// and provides the delegate with the data that was retrieved.
