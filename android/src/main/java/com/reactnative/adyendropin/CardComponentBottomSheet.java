@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 
+import com.adyen.checkout.base.ComponentError;
 import com.adyen.checkout.base.PaymentComponentState;
 import com.adyen.checkout.base.model.paymentmethods.PaymentMethod;
 import com.adyen.checkout.card.CardComponent;
@@ -93,6 +94,12 @@ public class CardComponentBottomSheet extends BottomSheetDialogFragment implemen
         customCardView.attach(component, this);
 
         this.component.observe(this, this);
+        this.component.observeErrors(this, new Observer<ComponentError>() {
+            @Override
+            public void onChanged(ComponentError componentError) {
+                adyenDropInPayment.handlePaymentError(componentError);
+            }
+        });
         this.payButton = customCardView.findViewById(R.id.customPayButton);
         if (customCardView.isConfirmationRequired()) {
             payButton.setOnClickListener(new View.OnClickListener() {
@@ -101,18 +108,11 @@ public class CardComponentBottomSheet extends BottomSheetDialogFragment implemen
                     startPayment();
                 }
             });
-            //this.setInitialSavedState(BottomSheetBehavior.STATE_EXPANDED);
-
             this.setInitViewState(BottomSheetBehavior.STATE_EXPANDED);
             customCardView.requestFocus();
         } else {
             payButton.setVisibility(View.GONE);
         }
-//        final RecyclerView recyclerView = (RecyclerView) view;
-//        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-//        CardView cardView = this.getActivity().findViewById(R.id.cardView);
-//        cardView.attach(component, this);
-        //recyclerView.setAdapter(new ItemAdapter(getArguments().getInt(ARG_ITEM_COUNT)));
     }
 
     @Override
@@ -140,7 +140,8 @@ public class CardComponentBottomSheet extends BottomSheetDialogFragment implemen
             }
         } catch (CheckoutException e) {
             e.printStackTrace();
-            //handleError(new ComponentError(e));
+            this.adyenDropInPayment.handlePaymentError(new ComponentError(e));
+            return;
         }
         this.adyenDropInPayment.handlePaymentSubmit(componentState);
         this.hide();

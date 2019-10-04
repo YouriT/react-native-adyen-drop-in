@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
+import com.adyen.checkout.base.ActionComponentData;
 import com.adyen.checkout.base.ComponentError;
 import com.adyen.checkout.base.PaymentComponentState;
 import com.adyen.checkout.base.model.PaymentMethodsApiResponse;
@@ -38,10 +39,14 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     String publicKey;
     Environment environment;
     String envName;
+    boolean isDropIn;
+    AdyenDropInPaymentService dropInService = new AdyenDropInPaymentService();
+    public static AdyenDropInPayment INSTANCE = null;
 
 
     public AdyenDropInPayment(@NonNull ReactApplicationContext reactContext) {
         super(reactContext);
+        AdyenDropInPayment.INSTANCE = this;
     }
 
     public static WritableMap convertJsonToMap(JSONObject jsonObject) throws JSONException {
@@ -113,7 +118,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void paymentMethods(String paymentMethodsJson) {
-
+        isDropIn = true;
         CardConfiguration cardConfiguration =
                 new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey)
                         .build();
@@ -142,7 +147,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void cardPaymentMethod(String paymentMethodsJson, String name, Boolean showHolderField, Boolean showStoreField) {
-
+        isDropIn = false;
         final AdyenDropInPayment adyenDropInPayment = this;
         JSONObject jsonObject = null;
         try {
@@ -173,6 +178,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void storedCardPaymentMethod(String paymentMethodsJson, Integer index) {
+        isDropIn = false;
         final AdyenDropInPayment adyenDropInPayment = this;
         JSONObject jsonObject = null;
         try {
@@ -204,9 +210,10 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void handleAction(String actionJson) {
-        AdyenDropInPaymentService dropInService = this.getDropInService();
-        CallResult callResult = new CallResult(CallResult.ResultType.ACTION, actionJson);
-        dropInService.handleAsyncCallback(callResult);
+        if (isDropIn) {
+            CallResult callResult = new CallResult(CallResult.ResultType.ACTION, actionJson);
+            dropInService.handleAsyncCallback(callResult);
+        }
     }
 
     @NonNull
@@ -238,6 +245,21 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             this.sendEvent(this.getReactApplicationContext(), "onPaymentSubmit", eventData);
         }
 
+    }
+
+    public void handlePaymentProvide(ActionComponentData actionComponentData) {
+        WritableMap data = null;
+        try {
+            data = convertJsonToMap(ActionComponentData.SERIALIZER.serialize(actionComponentData));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        WritableMap resultData = new WritableNativeMap();
+        resultData.putBoolean("isDropIn", false);
+        resultData.putString("env", this.envName);
+        resultData.putString("msg", "");
+        resultData.putMap("data", data);
+        this.sendEvent(this.getReactApplicationContext(), "onPaymentProvide", resultData);
     }
 
     void handlePaymentError(ComponentError componentError) {
