@@ -58,6 +58,14 @@ export default {
         index = index || 0;
         return AdyenDropIn.storedCardPaymentMethod(paymentMethodJson, index);
     },
+    contractPaymentMethod(paymentMethodJson, index) {
+        if (typeof paymentMethodJson === 'object') {
+            paymentMethodJson = JSON.stringify(paymentMethodJson)
+        }
+        this._validateParam(paymentMethodJson, 'contractPaymentMethod', 'string');
+        index = index || 0;
+        return AdyenDropIn.contractPaymentMethod(paymentMethodJson, index);
+    },
     /**
      * handle Action from payments
      * @param actionJson
