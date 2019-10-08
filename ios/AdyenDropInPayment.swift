@@ -185,6 +185,23 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     dispatch { UIApplication.shared.delegate?.window??.rootViewController!.present(cardComponent.viewController, animated: true)
     }
   }
+  @objc func contractPaymentMethod(_ paymentMethodsJson: String,index: Int) {
+    self.isDropIn = false
+    let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
+    let paymentMethods:PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
+    let cardPaymentMethod:StoredCardPaymentMethod? = self.getStoredCardPaymentMethod(paymentMethods!,index: index)
+    var paymentMethodMap:Dictionary? = ["type": "scheme","recurringDetailReference":cardPaymentMethod?.identifier]
+    let resultData = ["paymentMethod":paymentMethodMap,"storePaymentMethod":true] as [String : Any]
+   self.sendEvent(
+     withName: "onPaymentSubmit",
+     body: [
+       "isDropIn":self.isDropIn,
+       "env":self.envName,
+       "data": resultData
+     ]
+   )
+  }
+    
 
   @objc func cardPaymentMethod(_ paymentMethodsJson: String, name: String, showHolderField: Bool, showStoreField: Bool) {
     self.isDropIn = false
