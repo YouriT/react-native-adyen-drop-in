@@ -230,7 +230,8 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
   ///   - data: The data supplied by the payment component.
   ///   - component: The payment component from which the payment details were submitted.
   func didSubmit(_ data: PaymentComponentData, from _: PaymentComponent) {
-    cardComponent?.viewController.dismiss(animated: true)
+    self.cardComponent?.viewController.dismiss(animated: true)
+    self.customCardComponent?.viewController.dismiss(animated: true)
 
     var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
     paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
