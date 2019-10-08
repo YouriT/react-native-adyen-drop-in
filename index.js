@@ -45,6 +45,7 @@ export default {
         showStoreField = showStoreField || false;
         return AdyenDropIn.cardPaymentMethod(paymentMethodJson, name, showHolderField, showStoreField);
     },
+
     /**
      * use card paymentMethod
      * @param paymentMethodJson
