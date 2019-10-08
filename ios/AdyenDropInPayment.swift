@@ -169,7 +169,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
 
   @objc func storedCardPaymentMethod(_ paymentMethodsJson: String, index: Int) {
     self.isDropIn = false
-    self.cardPaymentMethod?.viewController.dismiss(animated: true)
+    self.cardComponent?.viewController.dismiss(animated: true)
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
     let cardPaymentMethod: StoredCardPaymentMethod? = self.getStoredCardPaymentMethod(paymentMethods!, index: index)
