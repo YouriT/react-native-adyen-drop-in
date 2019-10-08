@@ -216,7 +216,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     cardComponent.showsHolderNameField = showHolderField
     let componentViewController:ComponentViewController = cardComponent.viewController as! ComponentViewController
     let formViewController:FormViewController = componentViewController.rootViewController as! FormViewController
-    let button:FormFooterItem = formViewController.items[formViewController.items.count] as! FormFooterItem
+    let button:FormFooterItem = formViewController.items[formViewController.items.count-1] as! FormFooterItem
     if(buttonTitle.count>0){
         button.submitButtonTitle = buttonTitle
     }
