@@ -36,7 +36,7 @@ export default {
         this._validateParam(paymentMethodJson, 'paymentMethods', 'string');
         return AdyenDropIn.paymentMethods(paymentMethodJson);
     },
-    cardPaymentMethod(paymentMethodJson, name, showHolderField, showStoreField,buttonTitle) {
+    cardPaymentMethod(paymentMethodJson, name, showHolderField, showStoreField, buttonTitle) {
         if (typeof paymentMethodJson === 'object') {
             paymentMethodJson = JSON.stringify(paymentMethodJson)
         }
@@ -44,7 +44,7 @@ export default {
         showHolderField = showHolderField || false;
         showStoreField = showStoreField || false;
         buttonTitle = buttonTitle || ""
-        return AdyenDropIn.cardPaymentMethod(paymentMethodJson, name, showHolderField, showStoreField,buttonTitle);
+        return AdyenDropIn.cardPaymentMethod(paymentMethodJson, name, showHolderField, showStoreField, buttonTitle);
     },
 
     /**
@@ -142,6 +142,9 @@ export default {
             'onPaymentSubmit',
             'function',
         );
+        if (onPaymentSubmitListener) {
+            onPaymentSubmitListener.remove()
+        }
         onPaymentSubmitListener = addListener(
             'onPaymentSubmit',
             e => {
