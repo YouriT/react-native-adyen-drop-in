@@ -23,7 +23,7 @@ class AdyenDropInPayment: RCTEventEmitter {
   func requiresMainQueueSetup() -> Bool {
     return true
   }
-
+  var customCardComponent:CustomCardComponent?
   var dropInComponent: DropInComponent?
   var cardComponent: CardComponent?
   var threeDS2Component: ThreeDS2Component?
@@ -209,22 +209,13 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
     let cardPaymentMethod: CardPaymentMethod? = self.getCardPaymentMethodByName(paymentMethods!, name: name)
 
-    let cardComponent = CardComponent(paymentMethod: cardPaymentMethod!,
-                                      publicKey: self.publicKey!)
-    self.cardComponent = cardComponent
-    cardComponent.showsStorePaymentMethodField = showStoreField
-    cardComponent.showsHolderNameField = showHolderField
-    let componentViewController:ComponentViewController = cardComponent.viewController as! ComponentViewController
-    let formViewController:FormViewController = componentViewController.rootViewController as! FormViewController
-    let button:FormFooterItem = formViewController.items[formViewController.items.count-1] as! FormFooterItem
-    if(buttonTitle.count>0){
-        button.submitButtonTitle = buttonTitle
-    }
-    // Replace CardComponent with the payment method Component that you want to add.
-    // Check specific payment method pages to confirm if you need to configure additional required parameters.
-    // For example, to enable the Card form, you need to provide your Client Encryption Public Key.
-    cardComponent.delegate = self
-    cardComponent.environment = env!
+    let cardComponent = CustomCardComponent(paymentMethod:cardPaymentMethod!,
+                                            publicKey: self.publicKey!,buttonTitle: buttonTitle)
+    self.customCardComponent = cardComponent
+    self.customCardComponent!.showsStorePaymentMethodField = showStoreField
+    self.customCardComponent!.showsHolderNameField = showHolderField
+    self.customCardComponent!.delegate = self
+    self.customCardComponent!.environment = self.env!
     
     // When you're ready to go live, change this to .live
     // or to other environment values described in https://adyen.github.io/adyen-ios/Docs/Structs/Environment.html
