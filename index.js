@@ -130,7 +130,7 @@ export default {
     onPaymentFail(mOnPaymentFail) {
         this._validateParam(mOnPaymentFail, 'onPaymentFail', 'function');
         if (onPaymentFailListener) {
-            onPaymentFailListener.remove()
+            EventEmitter.removeListener(onPaymentFailListener)
         }
         onPaymentFailListener = addListener('onPaymentFail', e => {
             mOnPaymentFail(e);
@@ -146,7 +146,7 @@ export default {
             'function',
         );
         if (onPaymentSubmitListener) {
-            onPaymentSubmitListener.remove()
+            EventEmitter.removeListener(onPaymentSubmitListener)
         }
         onPaymentSubmitListener = addListener(
             'onPaymentSubmit',
@@ -176,16 +176,16 @@ export default {
     events: EventEmitter,
     removeListeners() {
         if (onPaymentProvideListener) {
-            onPaymentProvideListener.remove();
+            EventEmitter.removeListener(onPaymentProvideListener)
         }
         if (onPaymentFailListener) {
-            onPaymentFailListener.remove();
+            EventEmitter.removeListener(onPaymentFailListener)
         }
         if (onPaymentSubmitListener) {
-            onPaymentSubmitListener.remove();
+            EventEmitter.removeListener(onPaymentSubmitListener)
         }
         if (onPaymentCancelListener) {
-            onPaymentCancelListener.remove();
+            EventEmitter.removeListener(onPaymentCancelListener)
         }
 
     },
