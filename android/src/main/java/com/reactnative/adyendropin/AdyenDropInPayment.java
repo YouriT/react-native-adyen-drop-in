@@ -163,7 +163,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void encryptCard(String cardNumber, Integer expiryMonth, Integer expiryYear, String securityCode,final Promise promise) {
+    public void encryptCard(String cardNumber, Integer expiryMonth, Integer expiryYear, String securityCode, final Promise promise) {
         Card.Builder cardBuilder = new Card.Builder();
         cardBuilder.setNumber(cardNumber).setExpiryDate(expiryMonth, expiryYear);
         cardBuilder.setSecurityCode(securityCode);
@@ -173,12 +173,13 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         resultMap.putString("encryptedNumber", encryptedCard.getEncryptedNumber());
         resultMap.putString("encryptedExpiryMonth", encryptedCard.getEncryptedExpiryMonth());
         resultMap.putString("encryptedExpiryYear", encryptedCard.getEncryptedExpiryYear());
-        resultMap.putString("encryptedSecurityCode", "20"+encryptedCard.getEncryptedSecurityCode());
+        resultMap.putString("encryptedSecurityCode", "20" + encryptedCard.getEncryptedSecurityCode());
         promise.resolve(resultMap);
     }
 
+
     @ReactMethod
-    public void cardPaymentMethod(String paymentMethodsJson, String name, Boolean showHolderField, Boolean showStoreField) {
+    public void cardPaymentMethod(String paymentMethodsJson, String name, Boolean showHolderField, Boolean showStoreField, String buttonTitle) {
         isDropIn = false;
         final AdyenDropInPayment adyenDropInPayment = this;
         JSONObject jsonObject = null;
@@ -197,7 +198,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             @Override
             public void run() {
                 final CardComponent cardComponent = new CardComponent(paymentMethod, cardConfiguration);
-                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment);
+                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment,buttonTitle);
                 cardComponentDialogFragment.setPaymentMethod(paymentMethod);
                 cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
                 cardComponentDialogFragment.setComponent(cardComponent);
@@ -206,6 +207,34 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
                 cardComponentDialogFragment.show(((FragmentActivity) adyenDropInPayment.getCurrentActivity()).getSupportFragmentManager());
             }
         });
+    }
+
+    @ReactMethod
+    public void contractPaymentMethod(String paymentMethodsJson, Integer index) {
+        isDropIn = false;
+        final AdyenDropInPayment adyenDropInPayment = this;
+        JSONObject jsonObject = null;
+        try {
+            jsonObject = new JSONObject(paymentMethodsJson);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
+        final RecurringDetail paymentMethod = this.getStoredCardPaymentMethod(paymentMethodsApiResponse, index);
+        WritableMap eventData = new WritableNativeMap();
+        WritableMap data = new WritableNativeMap();
+
+        WritableMap paymentMethodMap = new WritableNativeMap();
+        paymentMethodMap.putString("type", "scheme");
+        paymentMethodMap.putString("recurringDetailReference", paymentMethod.getId());
+        data.putMap("paymentMethod", paymentMethodMap);
+        data.putBoolean("storePaymentMethod", true);
+
+        eventData.putBoolean("isDropIn", this.isDropIn);
+        eventData.putString("env", this.envName);
+        eventData.putMap("data", data);
+        this.sendEvent(this.getReactApplicationContext(), "onPaymentSubmit", eventData);
     }
 
     @ReactMethod

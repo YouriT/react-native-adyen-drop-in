@@ -36,11 +36,17 @@ public class CardComponentBottomSheet extends BottomSheetDialogFragment implemen
     CardConfiguration cardConfiguration;
     Button payButton;
     CardComponentCustomView customCardView;
+    String payButtonTitle;
     private Integer dialogInitViewState = BottomSheetBehavior.STATE_COLLAPSED;
     final AdyenDropInPayment adyenDropInPayment;
 
     public CardComponentBottomSheet(AdyenDropInPayment adyenDropInPayment) {
+        this(adyenDropInPayment, null);
+    }
+
+    public CardComponentBottomSheet(AdyenDropInPayment adyenDropInPayment, String payButtonTitle) {
         this.adyenDropInPayment = adyenDropInPayment;
+        this.payButtonTitle = payButtonTitle;
     }
 
 
@@ -101,6 +107,9 @@ public class CardComponentBottomSheet extends BottomSheetDialogFragment implemen
             }
         });
         this.payButton = customCardView.findViewById(R.id.customPayButton);
+        if (this.payButtonTitle != null && this.payButtonTitle.trim().length() > 0) {
+            this.payButton.setText(this.payButtonTitle);
+        }
         if (customCardView.isConfirmationRequired()) {
             payButton.setOnClickListener(new View.OnClickListener() {
                 @Override
