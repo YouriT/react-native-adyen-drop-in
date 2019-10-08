@@ -79,7 +79,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
                                           paymentMethodsConfiguration: configuration!)
     self.dropInComponent = dropInComponent
     dropInComponent.delegate = self
-    dropInComponent.environment = env!
+    dropInComponent.environment = self.env!
 
     dispatch {
       UIApplication.shared.delegate?.window??.rootViewController!.present(dropInComponent.viewController, animated: true)
@@ -171,9 +171,9 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     self.isDropIn = false
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
-    let cardPaymentMethod: StoredCardPaymentMethod? = getStoredCardPaymentMethod(paymentMethods!, index: index)
+    let cardPaymentMethod: StoredCardPaymentMethod? = self.getStoredCardPaymentMethod(paymentMethods!, index: index)
     let cardComponent = CardComponent(paymentMethod: cardPaymentMethod!,
-                                      publicKey: publicKey!)
+                                      publicKey: self.publicKey!)
     self.cardComponent = cardComponent
     // Replace CardComponent with the payment method Component that you want to add.
     // Check specific payment method pages to confirm if you need to configure additional required parameters.
@@ -190,10 +190,10 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     self.isDropIn = false
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
-    let cardPaymentMethod: CardPaymentMethod? = getCardPaymentMethodByName(paymentMethods!, name: name)
+    let cardPaymentMethod: CardPaymentMethod? = self.getCardPaymentMethodByName(paymentMethods!, name: name)
 
     let cardComponent = CardComponent(paymentMethod: cardPaymentMethod!,
-                                      publicKey: publicKey!)
+                                      publicKey: self.publicKey!)
     self.cardComponent = cardComponent
     cardComponent.showsStorePaymentMethodField = showStoreField
     cardComponent.showsHolderNameField = showHolderField
