@@ -24,7 +24,7 @@ RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env)
 RCT_EXTERN_METHOD(paymentMethods:(NSString)paymentMethodsJson)
 
 //use cardPaymentMethod
-RCT_EXTERN_METHOD(cardPaymentMethod:(NSString)paymentMethodsJson name:(NSString *) name showHolderField:(BOOL) showHolderField showStoreField:(BOOL) showStoreField)
+RCT_EXTERN_METHOD(cardPaymentMethod:(NSString)paymentMethodsJson name:(NSString *) name showHolderField:(BOOL) showHolderField showStoreField:(BOOL) showStoreField buttonTitle:(NSString *) buttonTitle)
 //payment by contract
 RCT_EXTERN_METHOD(contractPaymentMethod:(NSString)paymentMethodsJson index:(NSInteger *) index)
 

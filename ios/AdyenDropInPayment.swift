@@ -214,11 +214,18 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     self.cardComponent = cardComponent
     cardComponent.showsStorePaymentMethodField = showStoreField
     cardComponent.showsHolderNameField = showHolderField
+    let componentViewController:ComponentViewController = cardComponent.viewController as! ComponentViewController
+    let formViewController:FormViewController = componentViewController.rootViewController as! FormViewController
+    let button:FormFooterItem = formViewController.items[formViewController.items.count] as! FormFooterItem
+    if(buttonTitle.count>0){
+        button.submitButtonTitle = buttonTitle
+    }
     // Replace CardComponent with the payment method Component that you want to add.
     // Check specific payment method pages to confirm if you need to configure additional required parameters.
     // For example, to enable the Card form, you need to provide your Client Encryption Public Key.
     cardComponent.delegate = self
     cardComponent.environment = env!
+    
     // When you're ready to go live, change this to .live
     // or to other environment values described in https://adyen.github.io/adyen-ios/Docs/Structs/Environment.html
     dispatch {
