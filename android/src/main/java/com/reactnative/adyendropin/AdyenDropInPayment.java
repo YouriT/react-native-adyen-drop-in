@@ -92,7 +92,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         return map;
     }
 
-    public static ReadableArray convertJsonToArray(JSONArray array) throws JSONException {
+    public static WritableArray convertJsonToArray(JSONArray array) throws JSONException {
         WritableNativeArray result = new WritableNativeArray();
         for (int i = 0; i < array.length(); i++) {
             Object value = array.get(i);
