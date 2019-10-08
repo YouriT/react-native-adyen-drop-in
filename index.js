@@ -129,6 +129,9 @@ export default {
      */
     onPaymentFail(mOnPaymentFail) {
         this._validateParam(mOnPaymentFail, 'onPaymentFail', 'function');
+        if (onPaymentFailListener) {
+            onPaymentFailListener.remove()
+        }
         onPaymentFailListener = addListener('onPaymentFail', e => {
             mOnPaymentFail(e);
         });
