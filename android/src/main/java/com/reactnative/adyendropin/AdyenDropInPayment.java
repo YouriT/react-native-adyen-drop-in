@@ -1,5 +1,6 @@
 package com.reactnative.adyendropin;
 
+import android.app.Activity;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
@@ -33,6 +34,7 @@ import com.adyen.checkout.dropin.DropIn;
 import com.adyen.checkout.dropin.DropInConfiguration;
 import com.adyen.checkout.dropin.service.CallResult;
 import com.adyen.checkout.redirect.RedirectComponent;
+import com.adyen.checkout.redirect.RedirectUtil;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
@@ -41,6 +43,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
+import android.net.Uri;
 import android.util.Log;
 
 import java.util.Iterator;
@@ -64,6 +67,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     public AdyenDropInPayment(@NonNull ReactApplicationContext reactContext) {
         super(reactContext);
         AdyenDropInPayment.INSTANCE = this;
+        initActionComponents();
     }
 
     public static WritableMap convertJsonToMap(JSONObject jsonObject) throws JSONException {
@@ -198,7 +202,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             @Override
             public void run() {
                 final CardComponent cardComponent = new CardComponent(paymentMethod, cardConfiguration);
-                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment,buttonTitle);
+                CardComponentBottomSheet cardComponentDialogFragment = new CardComponentBottomSheet(adyenDropInPayment, buttonTitle);
                 cardComponentDialogFragment.setPaymentMethod(paymentMethod);
                 cardComponentDialogFragment.setCardConfiguration(cardConfiguration);
                 cardComponentDialogFragment.setComponent(cardComponent);
@@ -279,6 +283,14 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         }
     }
 
+    public void onNewIntent(Activity activity, Intent intent) {
+        Uri data = intent.getData();
+        RedirectComponent redirectComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+        if (data != null && data.toString().startsWith(RedirectUtil.REDIRECT_RESULT_SCHEME)) {
+            redirectComponent.handleRedirectResponse(data);
+        }
+    }
+
     BaseActionComponent getActionComponent(Action action) {
         if (ACTION_COMPONENT_MAP.containsKey(action.getType())) {
             return ACTION_COMPONENT_MAP.get(action.getType());
@@ -304,25 +316,46 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
                 break;
         }
         if (actionComponent != null) {
-            final AdyenDropInPayment adyenDropInPayment = this;
-            ACTION_COMPONENT_MAP.put(action.getType(), actionComponent);
-            actionComponent.observe((LifecycleOwner) this.getCurrentActivity(), new Observer<ActionComponentData>() {
 
-                @Override
-                public void onChanged(ActionComponentData actionComponentData) {
-                    adyenDropInPayment.handlePaymentProvide(actionComponentData);
-                }
-            });
-            actionComponent.observeErrors((LifecycleOwner) this.getCurrentActivity(), new Observer<ComponentError>() {
-                @Override
-                public void onChanged(ComponentError componentError) {
-                    adyenDropInPayment.handlePaymentError(componentError);
-                }
-            });
+            ACTION_COMPONENT_MAP.put(action.getType(), actionComponent);
+
 
         }
         return actionComponent;
 
+    }
+
+    void initActionComponents() {
+        final AdyenDropInPayment adyenDropInPayment = this;
+        RedirectComponent redirectComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+        redirectComponent.observe((LifecycleOwner) this.getCurrentActivity(), new Observer<ActionComponentData>() {
+
+            @Override
+            public void onChanged(ActionComponentData actionComponentData) {
+                adyenDropInPayment.handlePaymentProvide(actionComponentData);
+            }
+        });
+        redirectComponent.observeErrors((LifecycleOwner) this.getCurrentActivity(), new Observer<ComponentError>() {
+            @Override
+            public void onChanged(ComponentError componentError) {
+                adyenDropInPayment.handlePaymentError(componentError);
+            }
+        });
+
+        Adyen3DS2Component adyen3DS2Component = Adyen3DS2Component.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
+        adyen3DS2Component.observe((LifecycleOwner) this.getCurrentActivity(), new Observer<ActionComponentData>() {
+
+            @Override
+            public void onChanged(ActionComponentData actionComponentData) {
+                adyenDropInPayment.handlePaymentProvide(actionComponentData);
+            }
+        });
+        adyen3DS2Component.observeErrors((LifecycleOwner) this.getCurrentActivity(), new Observer<ComponentError>() {
+            @Override
+            public void onChanged(ComponentError componentError) {
+                adyenDropInPayment.handlePaymentError(componentError);
+            }
+        });
     }
 
     @ReactMethod
