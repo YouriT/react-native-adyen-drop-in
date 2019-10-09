@@ -287,10 +287,17 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     public void onNewIntent(Activity activity, Intent intent) {
         Uri data = intent.getData();
-        RedirectComponent redirectComponent = RedirectComponent.PROVIDER.get((FragmentActivity) this.getCurrentActivity());
         if (data != null && data.toString().startsWith(RedirectUtil.REDIRECT_RESULT_SCHEME)) {
             redirectComponent.handleRedirectResponse(data);
         }
+    }
+
+    public RedirectComponent getRedirectComponent() {
+        return redirectComponent;
+    }
+
+    public void setRedirectComponent(RedirectComponent redirectComponent) {
+        this.redirectComponent = redirectComponent;
     }
 
     BaseActionComponent getActionComponent(Action action) {
