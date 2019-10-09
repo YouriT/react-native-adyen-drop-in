@@ -69,7 +69,6 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     public AdyenDropInPayment(@NonNull ReactApplicationContext reactContext) {
         super(reactContext);
         AdyenDropInPayment.INSTANCE = this;
-        initActionComponents(reactContext);
     }
 
     public static WritableMap convertJsonToMap(JSONObject jsonObject) throws JSONException {
@@ -286,6 +285,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     public void onNewIntent(Activity activity, Intent intent) {
+        initActionComponents(this.getReactApplicationContext());
         Uri data = intent.getData();
         if (data != null && data.toString().startsWith(RedirectUtil.REDIRECT_RESULT_SCHEME)) {
             redirectComponent.handleRedirectResponse(data);
@@ -373,6 +373,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void handleAction(String actionJson) {
+
         if (isDropIn) {
             CallResult callResult = new CallResult(CallResult.ResultType.ACTION, actionJson);
             dropInService.handleAsyncCallback(callResult);
@@ -381,6 +382,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         if (actionJson == null || actionJson.length() <= 0) {
             return;
         }
+        initActionComponents(this.getReactApplicationContext());
         try {
 
             Action action = Action.SERIALIZER.deserialize(new JSONObject(actionJson));
