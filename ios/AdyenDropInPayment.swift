@@ -256,6 +256,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
   ///   - component: The payment component that failed.
   func didFail(with error: Error, from _: PaymentComponent) {
     cardComponent?.viewController.dismiss(animated: true)
+    customCardComponent?.viewController.dismiss(animated: true)
 
     sendEvent(
       withName: "onPaymentFail",
