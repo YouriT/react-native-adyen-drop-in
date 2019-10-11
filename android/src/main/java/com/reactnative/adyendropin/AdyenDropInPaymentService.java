@@ -2,18 +2,28 @@ package com.reactnative.adyendropin;
 
 import android.content.Intent;
 
+import com.adyen.checkout.base.ActionComponentData;
+import com.adyen.checkout.base.PaymentComponentState;
+import com.adyen.checkout.base.model.payments.request.PaymentComponentData;
 import com.adyen.checkout.dropin.service.CallResult;
 import com.adyen.checkout.dropin.service.DropInService;
 
 import org.json.JSONObject;
 
 public class AdyenDropInPaymentService extends DropInService {
+    public AdyenDropInPaymentService() {
+        AdyenDropInPayment.dropInService = this;
+    }
+
     @Override
     public CallResult makeDetailsCall(JSONObject jsonObject) {
         if (jsonObject == null) {
             return new CallResult(CallResult.ResultType.FINISHED, "");
         }
-        return new CallResult(CallResult.ResultType.FINISHED, jsonObject.toString());
+        if (AdyenDropInPayment.INSTANCE != null) {
+            AdyenDropInPayment.INSTANCE.handlePaymentProvide(ActionComponentData.SERIALIZER.deserialize(jsonObject));
+        }
+        return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
     }
 
     @Override
@@ -21,7 +31,12 @@ public class AdyenDropInPaymentService extends DropInService {
         if (jsonObject == null) {
             return new CallResult(CallResult.ResultType.FINISHED, "");
         }
-        return new CallResult(CallResult.ResultType.FINISHED, jsonObject.toString());
+        PaymentComponentData paymentComponentData = PaymentComponentData.SERIALIZER.deserialize(jsonObject);
+        PaymentComponentState paymentComponentState = new PaymentComponentState(paymentComponentData, true);
+        if (AdyenDropInPayment.INSTANCE != null) {
+            AdyenDropInPayment.INSTANCE.handlePaymentSubmit(paymentComponentState);
+        }
+        return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
     }
 
     @Override
@@ -29,6 +44,7 @@ public class AdyenDropInPaymentService extends DropInService {
         super.onHandleWork(intent);
 
     }
+
 
     public void handleAsyncCallback(CallResult callResult) {
         super.asyncCallback(callResult);
