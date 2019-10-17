@@ -169,6 +169,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
 
   @objc func storedCardPaymentMethod(_ paymentMethodsJson: String, index: Int) {
     self.isDropIn = false
+    self.threeDS2Component = nil
     self.cardComponent?.viewController.dismiss(animated: true)
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
@@ -188,6 +189,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
   }
   @objc func contractPaymentMethod(_ paymentMethodsJson: String,index: Int) {
     self.isDropIn = false
+    self.threeDS2Component = nil
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods:PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
     let cardPaymentMethod:StoredCardPaymentMethod? = self.getStoredCardPaymentMethod(paymentMethods!,index: index)
@@ -206,6 +208,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
 
     @objc func cardPaymentMethod(_ paymentMethodsJson: String, name: String, showHolderField: Bool, showStoreField: Bool,buttonTitle: String) {
     self.isDropIn = false
+    self.threeDS2Component = nil
     self.customCardComponent?.viewController.dismiss(animated: true)
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
@@ -275,31 +278,39 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     if(actionJson == nil||actionJson.count<=0){
         return;
     }
+    var parsedJson = actionJson.replacingOccurrences(of: "THREEDS2FINGERPRINT", with: "threeDS2Fingerprint")
+    parsedJson = actionJson.replacingOccurrences(of: "THREEDS2CHALLENGE", with: "threeDS2Challenge")
+    parsedJson = actionJson.replacingOccurrences(of: "REDIRECT", with: "redirect")
     if(self.isDropIn!){
-      let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
-      let action = try? JSONDecoder().decode(Action.self, from: actionData!)
-      dropInComponent?.handle(action!)
+        let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
+        let action = try? JSONDecoder().decode(Action.self, from: actionData!)
+        dropInComponent?.handle(action!)
       return;
     }
-    let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
-    let action = try? JSONDecoder().decode(Action.self, from: actionData!)
+    let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
+    let action:Action? = try! JSONDecoder().decode(Action.self, from: actionData!)
+
     switch action {
     /// Indicates the user should be redirected to a URL.
-    case is RedirectAction:
-       let redirectComponent:RedirectComponent = RedirectComponent(action: action as! RedirectAction)
+    case .redirect(let executeAction):
+       let redirectComponent:RedirectComponent = RedirectComponent(action: executeAction)
        redirectComponent.delegate = self
       break;
       /// Indicates a 3D Secure device fingerprint should be taken.
-    case is ThreeDS2FingerprintAction:
-      let threeDS2Component = ThreeDS2Component()
-      threeDS2Component.delegate = self
-      threeDS2Component.handle(action as! ThreeDS2FingerprintAction)
+    case .threeDS2Fingerprint(let executeAction):
+      if(self.threeDS2Component == nil){
+        self.threeDS2Component = ThreeDS2Component()
+        self.threeDS2Component!.delegate = self
+      }
+      self.threeDS2Component!.handle(executeAction)
       break;
       /// Indicates a 3D Secure challenge should be presented.
-    case is ThreeDS2ChallengeAction:
-      let threeDS2Component = ThreeDS2Component()
-      threeDS2Component.delegate = self
-      threeDS2Component.handle(action as! ThreeDS2FingerprintAction)
+    case .threeDS2Challenge(let executeAction):
+      if(self.threeDS2Component == nil){
+        self.threeDS2Component = ThreeDS2Component()
+        self.threeDS2Component!.delegate = self
+      }
+      self.threeDS2Component?.handle(executeAction)
       break;
     default :
       break;
@@ -319,8 +330,8 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     sendEvent(
       withName: "onPaymentProvide",
       body: [
-        "isDropIn": self.isDropIn,
-        "env": self.envName,
+        "isDropIn": self.isDropIn as Any,
+        "env": self.envName as Any,
         "data": resultData,
       ]
     )
@@ -335,8 +346,8 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     sendEvent(
       withName: "onPaymentFail",
       body: [
-        "isDropIn": self.isDropIn,
-        "env": self.envName,
+        "isDropIn": self.isDropIn as Any,
+        "env": self.envName as Any,
         "msg": error.localizedDescription,
         "error": String(describing: error),
       ]

@@ -384,11 +384,16 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         }
         initActionComponents(this.getReactApplicationContext());
         try {
-
+            final AdyenDropInPayment adyenDropInPayment = this;
             Action action = Action.SERIALIZER.deserialize(new JSONObject(actionJson));
             BaseActionComponent actionComponent = this.getActionComponent(action);
             if (actionComponent != null) {
-                actionComponent.handleAction(this.getCurrentActivity(), action);
+                this.getCurrentActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        actionComponent.handleAction(adyenDropInPayment.getCurrentActivity(), action);
+                    }
+                });
             }
 
         } catch (JSONException e) {
