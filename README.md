@@ -17,7 +17,15 @@ At the moment the implementation is very opiniated on the use case we encountere
 
 `$ yarn add react-native-adyen-drop-in`
 
-This module uses autolinking and has not been tested on RN<0.60.
+####iOS
+
+`cd ios && pod install`
+
+####Android
+
+No aditional steps required for Android.
+
+**NOTE:** This module uses autolinking and has not been tested on RN<0.60.
 
 ## API
 
