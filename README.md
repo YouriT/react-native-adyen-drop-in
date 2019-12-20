@@ -11,7 +11,7 @@ Visit the links above to make sure your project complies with Adyen's requiremen
 
 ## Disclamer
 
-At the moment the implementation is very opiniated on the use case we encountered. Feel free to submit P.R.
+At the moment the implementation is very opiniated on the use case we encountered. Feel free to submit Pull Requests.
 
 ## Getting Started
 
