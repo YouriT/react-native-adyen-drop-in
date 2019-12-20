@@ -4,8 +4,10 @@
 
 ## Current Adyen versions
 
-* Android: 3.4.0
-* iOS: ~>3.1.3
+* [Android](https://github.com/Adyen/adyen-android): 3.4.0
+* [iOS](https://github.com/Adyen/adyen-ios): ~>3.1.3
+
+Visit the links above to make sure your project complies with Adyen's requirements. 
 
 ## Disclamer
 
