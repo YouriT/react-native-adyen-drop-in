@@ -2,16 +2,11 @@ import { NativeEventEmitter, NativeModules } from "react-native";
 
 const AdyenDropIn = NativeModules.AdyenDropInPayment;
 const EventEmitter = new NativeEventEmitter(AdyenDropIn);
-const eventMap = {};
 let onPaymentProvideListener;
 let onPaymentFailListener;
 let onPaymentSubmitListener;
 let onPaymentCancelListener;
 const addListener = (key, listener) => {
-  if (eventMap[key]) {
-    return eventMap[key];
-  }
-  eventMap[key] = listener;
   EventEmitter.addListener(key, listener);
 };
 export default {
@@ -139,9 +134,6 @@ export default {
    */
   onPaymentFail(mOnPaymentFail) {
     this._validateParam(mOnPaymentFail, "onPaymentFail", "function");
-    if (onPaymentFailListener) {
-      EventEmitter.removeListener(onPaymentFailListener);
-    }
     onPaymentFailListener = addListener("onPaymentFail", e => {
       mOnPaymentFail(e);
     });
@@ -151,9 +143,6 @@ export default {
    */
   onPaymentSubmit(mOnPaymentSubmit) {
     this._validateParam(mOnPaymentSubmit, "onPaymentSubmit", "function");
-    if (onPaymentSubmitListener) {
-      EventEmitter.removeListener(onPaymentSubmitListener);
-    }
     onPaymentSubmitListener = addListener("onPaymentSubmit", e => {
       mOnPaymentSubmit(e);
     });
@@ -177,16 +166,16 @@ export default {
   events: EventEmitter,
   removeListeners() {
     if (onPaymentProvideListener) {
-      EventEmitter.removeListener(onPaymentProvideListener);
+      onPaymentProvideListener.remove();
+      onPaymentProvideListener = undefined;
     }
     if (onPaymentFailListener) {
-      EventEmitter.removeListener(onPaymentFailListener);
-    }
-    if (onPaymentSubmitListener) {
-      EventEmitter.removeListener(onPaymentSubmitListener);
+      onPaymentFailListener.remove();
+      onPaymentFailListener = undefined;
     }
     if (onPaymentCancelListener) {
-      EventEmitter.removeListener(onPaymentCancelListener);
+      onPaymentCancelListener.remove();
+      onPaymentFailListener = undefined;
     }
   }
 };

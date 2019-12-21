@@ -4,18 +4,28 @@
 
 ## Current Adyen versions
 
-* Android: 3.4.0
-* iOS: ~>3.1.3
+* [Android](https://github.com/Adyen/adyen-android): 3.4.0
+* [iOS](https://github.com/Adyen/adyen-ios): ~>3.1.3
+
+Visit the links above to make sure your project complies with Adyen's requirements. 
 
 ## Disclamer
 
-At the moment the implementation is very opiniated on the use case we encountered. Feel free to submit P.R.
+At the moment the implementation is very opiniated on the use case we encountered. Feel free to submit Pull Requests.
 
 ## Getting Started
 
 `$ yarn add react-native-adyen-drop-in`
 
-This module uses autolinking and has not been tested on RN<0.60.
+####iOS
+
+`cd ios && pod install`
+
+####Android
+
+No aditional steps required for Android.
+
+**NOTE:** This module uses autolinking and has not been tested on RN<0.60.
 
 ## API
 
