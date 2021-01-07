@@ -46,7 +46,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
     configuration = DropInComponent.PaymentMethodsConfiguration()
     configuration?.card.publicKey = publicKey
     self.publicKey = publicKey
-    configuration?.card.showsStorePaymentMethodField = false
+    configuration?.card.showsStorePaymentMethodField = true
     envName = env
     switch env {
     case "live":
@@ -61,7 +61,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
                                      expiryMonth:  String(expiryMonth),
                                      expiryYear: "20" + String(expiryYear))
      let encryptedCard = CardEncryptor.encryptedCard(for: card, publicKey: self.publicKey!)
-     
+
      let resultMap:Dictionary? = [
        "encryptedNumber":encryptedCard.number,
        "encryptedExpiryMonth":encryptedCard.expiryMonth,
@@ -87,11 +87,13 @@ extension AdyenDropInPayment: DropInComponentDelegate {
   }
 
   func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-    component.viewController.dismiss(animated: true)
+   // if(!self.isDropIn!) {
+        component.viewController.dismiss(animated: true)
+    //}
     var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
     paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
     let resultData = ["paymentMethod": paymentMethodMap, "storePaymentMethod": data.storePaymentMethod] as [String: Any]
-    
+
     sendEvent(
       withName: "onPaymentSubmit",
       body: [
@@ -204,7 +206,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
      ]
    )
   }
-    
+
 
     @objc func cardPaymentMethod(_ paymentMethodsJson: String, name: String, showHolderField: Bool, showStoreField: Bool,buttonTitle: String) {
     self.isDropIn = false
@@ -221,7 +223,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     self.customCardComponent!.showsHolderNameField = showHolderField
     self.customCardComponent!.delegate = self
     self.customCardComponent!.environment = self.env!
-    
+
     // When you're ready to go live, change this to .live
     // or to other environment values described in https://adyen.github.io/adyen-ios/Docs/Structs/Environment.html
     dispatch {
@@ -284,7 +286,9 @@ extension AdyenDropInPayment: ActionComponentDelegate {
     if(self.isDropIn!){
         let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
         let action = try? JSONDecoder().decode(Action.self, from: actionData!)
-        dropInComponent?.handle(action!)
+        DispatchQueue.main.async {
+            self.dropInComponent?.handle(action!);
+        }
       return;
     }
     let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
