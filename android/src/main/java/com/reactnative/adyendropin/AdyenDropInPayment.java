@@ -33,10 +33,12 @@ import com.adyen.checkout.cse.Encryptor;
 import com.adyen.checkout.dropin.DropIn;
 import com.adyen.checkout.dropin.DropInConfiguration;
 import com.adyen.checkout.dropin.service.CallResult;
+import com.adyen.checkout.googlepay.GooglePayConfiguration;
 import com.adyen.checkout.redirect.RedirectComponent;
 import com.adyen.checkout.redirect.RedirectUtil;
 import com.facebook.react.bridge.*;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.google.android.gms.wallet.WalletConstants;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -64,7 +66,8 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     static Map<String, BaseActionComponent> ACTION_COMPONENT_MAP = new ConcurrentHashMap<>();
     public static AdyenDropInPaymentService dropInService;
     public static AdyenDropInPayment INSTANCE = null;
-
+    static String GOOGLE_PAY_METHOD_TYPE = "paywithgoogle";
+    static String GOOGLE_PAY_CONFIGURATION_MERCHANT_ACCOUNT_NAME = "gatewayMerchantId";
 
     public AdyenDropInPayment(@NonNull ReactApplicationContext reactContext) {
         super(reactContext);
@@ -148,15 +151,23 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         this.cardConfiguration = cardConfiguration;
         Intent resultIntent = new Intent(this.getCurrentActivity(), this.getCurrentActivity().getClass());
         resultIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        this.dropInConfiguration = new DropInConfiguration.Builder(this.getCurrentActivity(), resultIntent, AdyenDropInPaymentService.class).addCardConfiguration(cardConfiguration).build();
-        JSONObject jsonObject = null;
-        try {
-            Log.i("string", paymentMethodsJson);
-            jsonObject = new JSONObject(paymentMethodsJson);
-        } catch (JSONException e) {
-            e.printStackTrace();
+
+        PaymentMethodsApiResponse paymentMethodsApiResponse = this.getPaymentMethods(paymentMethodsJson);
+
+        DropInConfiguration.Builder dropInBuilder = new DropInConfiguration.Builder(this.getCurrentActivity(), resultIntent, AdyenDropInPaymentService.class)
+            .addCardConfiguration(cardConfiguration);
+
+        String googlePayMerchantAccount = this.getGooglePayMerchantAccount(paymentMethodsApiResponse);
+        if (googlePayMerchantAccount != null) {
+            GooglePayConfiguration.Builder googlePayConfigurationBuilder = new GooglePayConfiguration.Builder(this.getCurrentActivity(), googlePayMerchantAccount);
+            googlePayConfigurationBuilder.setGooglePayEnvironment(environment == Environment.TEST ? WalletConstants.ENVIRONMENT_TEST : WalletConstants.ENVIRONMENT_PRODUCTION);
+
+            GooglePayConfiguration googlePayConfiguration = googlePayConfigurationBuilder.build();
+            dropInBuilder.addGooglePayConfiguration(googlePayConfiguration);
         }
-        PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
+
+        this.dropInConfiguration = dropInBuilder.build();
+
         final AdyenDropInPayment adyenDropInPayment = this;
         this.getCurrentActivity().runOnUiThread(new Runnable() {
 
@@ -166,6 +177,34 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
             }
         });
 
+    }
+
+    private PaymentMethodsApiResponse getPaymentMethods(String paymentMethodsJson) {
+        JSONObject jsonObject = null;
+        try {
+            Log.i("string", paymentMethodsJson);
+            jsonObject = new JSONObject(paymentMethodsJson);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        PaymentMethodsApiResponse paymentMethodsApiResponse = PaymentMethodsApiResponse.SERIALIZER.deserialize(jsonObject);
+        return paymentMethodsApiResponse;
+    }
+
+    private String getGooglePayMerchantAccount(PaymentMethodsApiResponse paymentMethodsApiResponse) {
+        List<PaymentMethod> paymentMethods = paymentMethodsApiResponse.getPaymentMethods();
+        for (PaymentMethod paymentMethod : paymentMethods) {
+            if (GOOGLE_PAY_METHOD_TYPE.equals(paymentMethod.getType())) {
+                String configuration = paymentMethod.getConfiguration();
+                try {
+                    JSONObject configurationObject = new JSONObject(configuration);
+                    return configurationObject.getString(GOOGLE_PAY_CONFIGURATION_MERCHANT_ACCOUNT_NAME);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
     }
 
     @ReactMethod
