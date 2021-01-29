@@ -42,11 +42,11 @@ class AdyenDropInPayment: RCTEventEmitter {
 }
 
 extension AdyenDropInPayment: DropInComponentDelegate {
-  @objc func configPayment(_ publicKey: String, env: String) {
+  @objc func configPayment(_ publicKey: String, env: String, showsStorePaymentMethodField: Bool = false) {
     configuration = DropInComponent.PaymentMethodsConfiguration()
     configuration?.card.publicKey = publicKey
     self.publicKey = publicKey
-    configuration?.card.showsStorePaymentMethodField = false
+    configuration?.card.showsStorePaymentMethodField = showsStorePaymentMethodField
     envName = env
     switch env {
     case "live":
