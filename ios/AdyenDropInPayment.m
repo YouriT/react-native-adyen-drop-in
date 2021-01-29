@@ -17,7 +17,7 @@
   return YES;
 }
 //init payment config
-RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env)
+RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env showsStorePaymentMethodField:(BOOL) showsStorePaymentMethodField)
 /**
   select paymentMethods and pay
  */
