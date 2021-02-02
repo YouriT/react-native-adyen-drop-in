@@ -20,7 +20,7 @@ export default {
    * @returns {*}
    */
   configPayment(publicKey, env, showsStorePaymentMethodField) {
-    if (Platfrom.OS === 'android') {
+    if (Platform.OS === 'android') {
       return AdyenDropIn.configPayment(publicKey, env);
     }
     
