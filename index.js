@@ -1,4 +1,4 @@
-import { NativeEventEmitter, NativeModules } from "react-native";
+import { NativeEventEmitter, NativeModules, Platfrom } from "react-native";
 
 const AdyenDropIn = NativeModules.AdyenDropInPayment;
 const EventEmitter = new NativeEventEmitter(AdyenDropIn);
@@ -20,6 +20,10 @@ export default {
    * @returns {*}
    */
   configPayment(publicKey, env, showsStorePaymentMethodField) {
+    if (Platfrom.OS === 'android') {
+      return AdyenDropIn.configPayment(publicKey, env);
+    }
+    
     return AdyenDropIn.configPayment(publicKey, env, showsStorePaymentMethodField);
   },
   /**
