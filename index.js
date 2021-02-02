@@ -19,8 +19,8 @@ export default {
    * Starting payment process.
    * @returns {*}
    */
-  configPayment(publicKey, env) {
-    return AdyenDropIn.configPayment(publicKey, env);
+  configPayment(publicKey, env, showsStorePaymentMethodField) {
+    return AdyenDropIn.configPayment(publicKey, env, showsStorePaymentMethodField);
   },
   /**
    * list paymentMethods
