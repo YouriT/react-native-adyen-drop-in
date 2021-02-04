@@ -143,6 +143,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
         isDropIn = true;
         CardConfiguration cardConfiguration =
                 new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey)
+                        .setHolderNameRequire(true)
                         .build();
         this.cardConfiguration = cardConfiguration;
         Intent resultIntent = new Intent(this.getCurrentActivity(), this.getCurrentActivity().getClass());
