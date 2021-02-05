@@ -45,6 +45,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
   @objc func configPayment(_ publicKey: String, env: String) {
     configuration = DropInComponent.PaymentMethodsConfiguration()
     configuration?.card.publicKey = publicKey
+    configuration?.card.showsHolderNameField = true
     self.publicKey = publicKey
     configuration?.card.showsStorePaymentMethodField = true
     envName = env
