@@ -23,8 +23,8 @@ public class AdyenDropInPaymentService extends DropInService {
         if (AdyenDropInPayment.INSTANCE != null) {
             AdyenDropInPayment.INSTANCE.handlePaymentProvide(ActionComponentData.SERIALIZER.deserialize(jsonObject));
         }
-        return new CallResult(CallResult.ResultType.FINISHED, "");
-        // return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
+
+        return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
     }
 
     @Override
@@ -37,8 +37,8 @@ public class AdyenDropInPaymentService extends DropInService {
         if (AdyenDropInPayment.INSTANCE != null) {
             AdyenDropInPayment.INSTANCE.handlePaymentSubmit(paymentComponentState);
         }
-        return new CallResult(CallResult.ResultType.FINISHED, "");
-        // return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
+
+        return new CallResult(CallResult.ResultType.WAIT, jsonObject.toString());
     }
 
     @Override
