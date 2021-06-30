@@ -126,7 +126,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void configPayment(String publicKey, String env) {
+    public void configPayment(String publicKey, String env, String merchantId) {
         this.publicKey = publicKey;
         this.envName = env;
         if (env == null || env.trim().length() <= 0) {
@@ -142,7 +142,7 @@ public class AdyenDropInPayment extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void paymentMethods(String paymentMethodsJson) {
+    public void paymentMethods(String paymentMethodsJson, String summaryJson) {
         isDropIn = true;
         CardConfiguration cardConfiguration =
                 new CardConfiguration.Builder(Locale.getDefault(), environment, publicKey)

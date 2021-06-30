@@ -9,6 +9,7 @@
 import Adyen
 import Foundation
 import SafariServices
+import PassKit
 
 @objc(AdyenDropInPayment)
 class AdyenDropInPayment: RCTEventEmitter {
@@ -42,12 +43,15 @@ class AdyenDropInPayment: RCTEventEmitter {
 }
 
 extension AdyenDropInPayment: DropInComponentDelegate {
-  @objc func configPayment(_ publicKey: String, env: String) {
+  @objc func configPayment(_ publicKey: String, env: String, merchantId: String) {
     configuration = DropInComponent.PaymentMethodsConfiguration()
     configuration?.card.publicKey = publicKey
     configuration?.card.showsHolderNameField = true
     self.publicKey = publicKey
     configuration?.card.showsStorePaymentMethodField = true
+
+    configuration?.applePay.merchantIdentifier = merchantId
+
     envName = env
     switch env {
     case "live":
@@ -72,12 +76,24 @@ extension AdyenDropInPayment: DropInComponentDelegate {
      resolve(resultMap)
    }
 
-  @objc func paymentMethods(_ paymentMethodsJson: String) {
+    @objc func paymentMethods(_ paymentMethodsJson: String, summary summaryJson: String) {
     self.isDropIn = true
     let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
+    let jsonSummaryData: Data? = summaryJson.data(using: String.Encoding.utf8) ?? Data()
+
     let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
+    let summary: Summary? = try? JSONDecoder().decode(Summary.self, from: jsonSummaryData!);
+
     let dropInComponent = DropInComponent(paymentMethods: paymentMethods!,
                                           paymentMethodsConfiguration: configuration!)
+
+    let payment = Payment(amount: Payment.Amount(value: NSDecimalNumber(decimal: summary!.total * 100).intValue, currencyCode: (summary?.currencyCode)!), countryCode: summary?.countryCode);
+    dropInComponent.payment = payment;
+
+    configuration?.applePay.summaryItems = [
+        PKPaymentSummaryItem(label: summary!.title, amount: NSDecimalNumber(decimal: summary!.total), type: .final)
+    ];
+
     self.dropInComponent = dropInComponent
     dropInComponent.delegate = self
     dropInComponent.environment = self.env!
@@ -88,7 +104,7 @@ extension AdyenDropInPayment: DropInComponentDelegate {
   }
 
   func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-    if(!self.isDropIn!) {
+    if(!self.isDropIn! || ((data.paymentMethod as? ApplePayDetails)?.type == "applepay")) {
         component.viewController.dismiss(animated: true)
     }
     var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
