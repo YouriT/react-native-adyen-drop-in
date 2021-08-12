@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4B8336D626976BC7000CA34B /* Summary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8336D526976BC7000CA34B /* Summary.swift */; };
 		81B27C6F234689B800972550 /* AdyenDropInPayment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B27C6C234689B700972550 /* AdyenDropInPayment.swift */; };
 		81B27C70234689B800972550 /* AdyenDropInPayment.m in Sources */ = {isa = PBXBuildFile; fileRef = 81B27C6D234689B800972550 /* AdyenDropInPayment.m */; };
 		81B27C71234689B800972550 /* ReactNativeAdyenDropin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B27C6E234689B800972550 /* ReactNativeAdyenDropin.swift */; };
@@ -30,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		134814201AA4EA6300B7C361 /* libRNAdyenDropIn.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNAdyenDropIn.a; sourceTree = BUILT_PRODUCTS_DIR; };
+        4B8336D526976BC7000CA34B /* Summary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Summary.swift; sourceTree = "<group>"; };
 		81B27C6C234689B700972550 /* AdyenDropInPayment.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AdyenDropInPayment.swift; sourceTree = "<group>"; };
 		81B27C6D234689B800972550 /* AdyenDropInPayment.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AdyenDropInPayment.m; sourceTree = "<group>"; };
 		81B27C6E234689B800972550 /* ReactNativeAdyenDropin.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReactNativeAdyenDropin.swift; sourceTree = "<group>"; };
@@ -62,6 +64,7 @@
 		58B511D21A9E6C8500147676 = {
 			isa = PBXGroup;
 			children = (
+				4B8336D526976BC7000CA34B /* Summary.swift */,
 				F1B7BE85234CA5C500ECE7E2 /* CustomCardComponent.swift */,
 				F1B7BE84234CA5C500ECE7E2 /* CustomFormCardNumberItem.swift */,
 				F1B7BE82234CA5C500ECE7E2 /* CustomFormCardNumberItemView.swift */,
@@ -138,6 +141,7 @@
 				F1B7BE86234CA5C500ECE7E2 /* CustomFormCardNumberItemView.swift in Sources */,
 				81B27C6F234689B800972550 /* AdyenDropInPayment.swift in Sources */,
 				81B27C71234689B800972550 /* ReactNativeAdyenDropin.swift in Sources */,
+				4B8336D626976BC7000CA34B /* Summary.swift in Sources */,
 				F1B7BE87234CA5C500ECE7E2 /* CustomStoredCardAlertManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

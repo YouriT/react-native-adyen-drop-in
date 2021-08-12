@@ -17,11 +17,11 @@
   return YES;
 }
 //init payment config
-RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env)
+RCT_EXTERN_METHOD(configPayment:(NSString)publicKey env:(NSString *) env merchantId:(NSString) merchantId)
 /**
   select paymentMethods and pay
  */
-RCT_EXTERN_METHOD(paymentMethods:(NSString)paymentMethodsJson)
+RCT_EXTERN_METHOD(paymentMethods:(NSString)paymentMethodsJson summary:(NSString) summaryJson)
 
 //use cardPaymentMethod
 RCT_EXTERN_METHOD(cardPaymentMethod:(NSString)paymentMethodsJson name:(NSString *) name showHolderField:(BOOL) showHolderField showStoreField:(BOOL) showStoreField buttonTitle:(NSString *) buttonTitle)

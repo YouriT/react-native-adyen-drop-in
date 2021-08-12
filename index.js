@@ -17,8 +17,8 @@ export default {
    * Starting payment process.
    * @returns {*}
    */
-  configPayment(publicKey, env) {
-    return AdyenDropIn.configPayment(publicKey, env);
+  configPayment(publicKey, env, merchantId) {
+    return AdyenDropIn.configPayment(publicKey, env, merchantId);
   },
   /**
    * list paymentMethods
@@ -27,12 +27,15 @@ export default {
    *
    * @returns {*}
    */
-  paymentMethods(paymentMethodJson) {
+  paymentMethods(paymentMethodJson, summaryJson) {
     if (typeof paymentMethodJson === 'object') {
       paymentMethodJson = JSON.stringify(paymentMethodJson);
     }
+    if (typeof summaryJson === 'object') {
+      summaryJson = JSON.stringify(summaryJson);
+    }
     this._validateParam(paymentMethodJson, 'paymentMethods', 'string');
-    return AdyenDropIn.paymentMethods(paymentMethodJson);
+    return AdyenDropIn.paymentMethods(paymentMethodJson, summaryJson);
   },
 
   /**
