@@ -1,10 +1,8 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
-        package="com.reactnative.adyendropin">
+    package="com.reactnative.adyendropin">
     <application>
-        <service
-            android:name=".AdyenDropInPaymentService"
-            android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <service android:name=".AdyenDropInPaymentService" />
     </application>
 </manifest>
   

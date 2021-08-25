@@ -1,17 +1,10 @@
 #import <Foundation/Foundation.h>
-#import <React/RCTBridgeModule.h>
-#import <React/RCTEventEmitter.h>
+#import "React/RCTBridgeModule.h"
 
 @interface RCT_EXTERN_MODULE(AdyenDropInPayment, NSObject)
 
-+(BOOL)requiresMainQueueSetup
-{
-  return YES;
-}
-
-RCT_EXTERN_METHOD(startPayment:(NSDictionary *)paymentMethodsJson config:(NSDictionary *)config)
-RCT_EXTERN_METHOD(handleAction:(NSString)actionJson)
-RCT_EXTERN_METHOD(handlePaymentResult:(NSString)paymentResultJson)
-RCT_EXTERN_METHOD(handleRedirectURL:(NSString)url)
+RCT_EXTERN_METHOD(startPayment:(NSDictionary *)paymentMethodsObj configObj:(NSDictionary *)config)
+RCT_EXTERN_METHOD(handleResponse:(NSDictionary *)responseObj)
+RCT_EXTERN_METHOD(handleReturnUrl:(NSString)url)
 
 @end

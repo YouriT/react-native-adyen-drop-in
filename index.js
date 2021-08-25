@@ -1,38 +1,27 @@
-import { NativeEventEmitter, NativeModules, Linking } from 'react-native';
-
-const AdyenDropIn = NativeModules.AdyenDropInPayment;
-const eventEmitter = new NativeEventEmitter(AdyenDropIn);
+import { NativeModules, NativeEventEmitter, Platform, Linking } from 'react-native';
+const { AdyenDropInPayment } = NativeModules;
+const eventEmitter = new NativeEventEmitter(AdyenDropInPayment);
 
 export default {
   /**
    * Start Drop-in
-   *
    * @param {object} paymentMethodJson
    * @param {object} config
-   *
-   * @returns {*}
    */
   startPayment(paymentMethodJson, config) {
-    if (!this.handleRedirectURL) {
-      this.handleRedirectURL = ({ url }) => AdyenDropIn.handleRedirectURL(url);
-      Linking.addEventListener('url', this.handleRedirectURL);
+    if (Platform.OS === 'ios' && !this.handleReturnUrl) {
+      this.handleReturnUrl = ({ url }) => AdyenDropInPayment.handleReturnUrl(url);
+      Linking.addEventListener('url', this.handleReturnUrl);
     }
-    return AdyenDropIn.startPayment(paymentMethodJson, config);
+    return AdyenDropInPayment.startPayment(paymentMethodJson, config);
   },
 
   /**
    * Handle server response
-   * @param {string|object} response
-   * @returns {*}
+   * @param {object} response
    */
   handleResponse(response) {
-    if (!response) return;
-    if (typeof response === 'string') response = JSON.parse(response);
-    if (response.action) {
-      return AdyenDropIn.handleAction(JSON.stringify(response.action));
-    } else {
-      return AdyenDropIn.handlePaymentResult(JSON.stringify(response));
-    }
+    return AdyenDropInPayment.handleResponse(response);
   },
   addListener(eventName, listener) {
     return eventEmitter.addListener(eventName, listener);

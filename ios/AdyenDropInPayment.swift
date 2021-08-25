@@ -1,15 +1,13 @@
 import Adyen
 import Foundation
-import SafariServices
+import PassKit
 
 @objc(AdyenDropInPayment)
 class AdyenDropInPayment: RCTEventEmitter {
   var dropInComponent: DropInComponent?
-  var publicKey: String?
-  var configuration: DropInComponent.PaymentMethodsConfiguration?
-  var payment: Payment?
+  var returnUrl: String?
 
-  func requiresMainQueueSetup() -> Bool {
+  @objc override static func requiresMainQueueSetup() -> Bool {
     return true
   }
 
@@ -17,203 +15,191 @@ class AdyenDropInPayment: RCTEventEmitter {
     return [
       "payment",
       "payment-details",
-      "error",
+      "result",
     ]
   }
 
-  func dispatch(_ closure: @escaping () -> Void) {
-    if Thread.isMainThread {
-      closure()
-    } else {
-      DispatchQueue.main.async(execute: closure)
+  func parseConfig(_ config: NSDictionary) -> DropInComponent.Configuration {
+    let env = config["environment"] as? String ?? "test"
+    let environment: Environment = {
+      if (env == "liveEurope") { return Environment.liveEurope }
+      else if (env == "liveUnitedStates") { return Environment.liveUnitedStates }
+      else if (env == "liveAustralia") { return Environment.liveAustralia }
+      else { return Environment.test }
+    }()
+
+    returnUrl = config["returnUrl"] as? String
+
+    let clientKey = config["clientKey"] as! String
+    let apiContext = APIContext(environment: environment, clientKey: clientKey)
+    let configuration = DropInComponent.Configuration(apiContext: apiContext)
+
+    let amountDict: [String:Any] = config["amount"] as? [String:Any] ?? [:]
+    let amount = Amount(value: amountDict["value"] as! Int, currencyCode: amountDict["currency"] as! String)
+
+    let countryCode = config["countryCode"] as! String
+    configuration.payment = Payment(amount: amount, countryCode: countryCode)
+
+    let card: [String:Any] = config["card"] as? [String:Any] ?? [:]
+    configuration.card.showsHolderNameField = card["showsHolderNameField"] as? Bool ?? false
+    configuration.card.showsStorePaymentMethodField = card["showsStorePaymentMethodField"] as? Bool ?? false
+
+    if let applePay: [String:Any] = config["applePay"] as? [String:Any] {
+      configuration.applePay = ApplePayComponent.Configuration(
+        summaryItems: [PKPaymentSummaryItem(
+          label: config["summaryLabel"] as? String ?? "Total",
+          amount: AmountFormatter.decimalAmount(
+            amount.value,
+            currencyCode: amount.currencyCode
+          ),
+          type: .final
+        )],
+        merchantIdentifier: applePay["merchantIdentifier"] as! String
+      )
     }
+
+    return configuration
   }
 
-  @objc func handlePaymentResult(_ paymentResult: String) {
+  @objc func startPayment(_ paymentMethodsObj: NSDictionary, configObj: NSDictionary) {
+    let paymentMethods = try! decode(paymentMethodsObj) as PaymentMethods
+    let configuration = parseConfig(configObj)
+
+    dropInComponent = DropInComponent(paymentMethods: paymentMethods, configuration: configuration)
+    dropInComponent?.delegate = self
+
     dispatch {
-      self.dropInComponent?.stopLoading(withSuccess: true, completion: {
-        self.dropInComponent?.viewController.dismiss(animated: true)
-      })
+      UIApplication.shared.keyWindow?.rootViewController?.adyen.topPresenter.present(
+        self.dropInComponent!.viewController,
+        animated: true
+      )
     }
   }
 
-  @objc func handleRedirectURL(_ url: String) {
-    dispatch {
-      RedirectComponent.applicationDidOpen(from: URL(string: url)!)
-    }
-  }
-}
-
-extension AdyenDropInPayment: DropInComponentDelegate {
-  @objc func startPayment(_ paymentMethodsJson: NSDictionary, config: NSDictionary) {
-    var paymentMethods: PaymentMethods?
+  @objc func handleResponse(_ responseObj: NSDictionary?) {
     do {
-        let jsonData = try! JSONSerialization.data(withJSONObject : paymentMethodsJson, options: .prettyPrinted)
-        paymentMethods = try Coder.decode(jsonData) as PaymentMethods
-    } catch {}
-
-    buildConfig(config)
-
-    let dropInComponent = DropInComponent(paymentMethods: paymentMethods!,
-                                          paymentMethodsConfiguration: configuration!)
-    self.dropInComponent = dropInComponent
-    dropInComponent.delegate = self
-    dropInComponent.environment = configuration!.environment
-    dropInComponent.payment = payment
-
-    dispatch {
-      if var topController = UIApplication.shared.keyWindow?.rootViewController {
-        while let presentedViewController = topController.presentedViewController {
-          topController = presentedViewController
+      let response = try decode(responseObj) as AdyenResponse
+      if let action = response.action {
+        dispatch {
+          self.dropInComponent?.handle(action)
         }
-        topController.present(dropInComponent.viewController, animated: true)
+      } else {
+        finish(resultCode: response.resultCode)
+      }
+    } catch {
+      finish(error: error)
+    }
+  }
+
+  @objc func handleReturnUrl(_ url: String) {
+    if url.hasPrefix(returnUrl ?? "") {
+      dispatch {
+        RedirectComponent.applicationDidOpen(from: URL(string: url)!)
       }
     }
   }
 
-  func buildConfig(_ config: NSDictionary) {
-    let configuration = DropInComponent.PaymentMethodsConfiguration()
-    self.configuration = configuration
-
-    let env = config["environment"] as? String ?? "test"
-    if (env == "liveEurope") { configuration.environment = Environment.liveEurope }
-    else if (env == "liveUnitedStates") { configuration.environment = Environment.liveUnitedStates }
-    else if (env == "liveAustralia") { configuration.environment = Environment.liveAustralia }
-    else { configuration.environment = Environment.test }
-
-    configuration.clientKey = config["clientKey"] as? String
-
-    let scheme: [String:Any] = config["scheme"] as? [String:Any] ?? [:]
-    configuration.card.showsHolderNameField = scheme["showsHolderNameField"] as? Bool ?? false
-    configuration.card.showsStorePaymentMethodField = scheme["showsStorePaymentMethodField"] as? Bool ?? false
-
-    let applePay: [String:Any] = config["applePay"] as? [String:Any] ?? [:]
-    configuration.applePay.merchantIdentifier = applePay["merchantIdentifier"] as? String
-
-    let amountDict: [String:Any] = config["amount"] as? [String:Any] ?? [:]
-    let amount = Payment.Amount(value: amountDict["value"] as! Int, currencyCode: amountDict["currency"] as! String)
-    payment = Payment(amount: amount)
-  }
-
-  func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-    var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
-    paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
-    let resultData = ["paymentMethod": paymentMethodMap, "storePaymentMethod": data.storePaymentMethod] as [String: Any]
-    
-    sendEvent(
-      withName: "payment",
-      body: [
-        "data": resultData,
-      ]
-    )
-  }
-
-  /// Invoked when additional details have been provided for a payment method.
-  ///
-  /// - Parameters:
-  ///   - data: The additional data supplied by the drop in component..
-  ///   - component: The drop in component from which the additional details were provided.
-  func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
-    component.viewController.dismiss(animated: true)
-    let resultData = ["details": data.details.dictionaryRepresentation, "paymentData": data.paymentData] as [String: Any]
-    sendEvent(
-      withName: "payment-details",
-      body: [
-        "data": resultData,
-      ]
-    )
-  }
-
-  /// Invoked when the drop in component failed with an error.
-  ///
-  /// - Parameters:
-  ///   - error: The error that occurred.
-  ///   - component: The drop in component that failed.
-  func didFail(with error: Error, from component: DropInComponent) {
-    component.viewController.dismiss(animated: true)
-    sendEvent(
-      withName: "error",
-      body: [
-        "message": error.localizedDescription,
-        "error": String(describing: error),
-      ]
-    )
-  }
-}
-
-extension AdyenDropInPayment: PaymentComponentDelegate {
-  /// Invoked when the payment component finishes, typically by a user submitting their payment details.
-  ///
-  /// - Parameters:
-  ///   - data: The data supplied by the payment component.
-  ///   - component: The payment component from which the payment details were submitted.
-  func didSubmit(_ data: PaymentComponentData, from _: PaymentComponent) {
-    var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
-    paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
-    let resultData = ["paymentMethod": paymentMethodMap, "storePaymentMethod": data.storePaymentMethod] as [String: Any]
-
-    sendEvent(
-      withName: "payment",
-      body: [
-        "data": resultData,
-      ]
-    )
-  }
-
-  /// Invoked when the payment component fails.
-  ///
-  /// - Parameters:
-  ///   - error: The error that occurred.
-  ///   - component: The payment component that failed.
-  func didFail(with error: Error, from _: PaymentComponent) {
-    sendEvent(
-      withName: "error",
-      body: [
-        "message": error.localizedDescription,
-        "error": String(describing: error),
-      ]
-    )
-  }
-}
-
-extension AdyenDropInPayment: ActionComponentDelegate {
-  @objc func handleAction(_ actionJson: String) {
-    let actionData: Data? = actionJson.data(using: String.Encoding.utf8) ?? Data()
-    let action: Action? = try! JSONDecoder().decode(Action.self, from: actionData!)
-
+  func finish(resultCode: AdyenResponse.ResultCode? = nil, error: Error? = nil) {
+    let success = resultCode == .authorised || resultCode == .received || resultCode == .pending
     dispatch {
-      self.dropInComponent?.handle(action!)
+      self.dropInComponent?.finalizeIfNeeded(with: success)
+      self.dropInComponent?.viewController.presentingViewController?.dismiss(animated: true, completion: {
+        self.dropInComponent = nil
+      })
+    }
+    if resultCode != nil {
+      sendEvent(withName: "result", body: [
+        "type": "finished",
+        "result": resultCode?.rawValue,
+      ])
+    } else if error != nil {
+      sendEvent(withName: "result", body: [
+        "type": "error",
+        "message": error?.localizedDescription,
+        "detail": String(describing: error),
+      ])
     }
   }
 
-  /// Invoked when the action component finishes
-  /// and provides the delegate with the data that was retrieved.
-  ///
-  /// - Parameters:
-  ///   - data: The data supplied by the action component.
-  ///   - component: The component that handled the action.
-  func didProvide(_ data: ActionComponentData, from _: ActionComponent) {
-    let resultData = ["details": data.details.dictionaryRepresentation, "paymentData": data.paymentData] as [String: Any]
-    sendEvent(
-      withName: "payment-details",
-      body: [
-        "data": resultData,
-      ]
-    )
+  func decode<T: Decodable>(_ obj: NSDictionary?) throws -> T {
+    if !JSONSerialization.isValidJSONObject(obj) { throw UnknownError() }
+    return try Coder.decode(JSONSerialization.data(withJSONObject: obj))
   }
 
-  /// Invoked when the action component fails.
-  ///
-  /// - Parameters:
-  ///   - error: The error that occurred.
-  ///   - component: The component that failed.
-  func didFail(with error: Error, from _: ActionComponent) {
-    sendEvent(
-      withName: "error",
-      body: [
-        "message": error.localizedDescription,
-        "error": String(describing: error),
-      ]
-    )
+  func encode<T: Encodable>(_ obj: T) -> [String: Any] {
+    let data = try? JSONSerialization.jsonObject(with: Coder.encode(obj))
+    return data as? [String: Any] ?? [:]
+  }
+
+  func dispatch(_ closure: @escaping () -> Void) {
+    if Thread.isMainThread { closure() }
+    else { DispatchQueue.main.async(execute: closure) }
+  }
+}
+
+extension AdyenDropInPayment : DropInComponentDelegate {
+  /// Invoked when a payment method is selected and the initial details have been filled.
+  func didSubmit(_ data: PaymentComponentData, for paymentMethod: PaymentMethod, from component: DropInComponent) {
+    sendEvent(withName: "payment", body: [
+      "paymentMethod": encode(data.paymentMethod.encodable),
+      "storePaymentMethod": data.storePaymentMethod,
+      "returnUrl": returnUrl,
+    ])
+  }
+
+  /// Invoked when additional details have been provided for a payment method.
+  func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
+    sendEvent(withName: "payment-details", body: [
+      "paymentData": data.paymentData,
+      "details": encode(data.details.encodable),
+    ])
+  }
+
+  /// Invoked when the action component finishes,
+  /// without any further steps needed by the application, for example in case of voucher payment methods.
+  /// The application just needs to dismiss the `DropInComponent`.
+  func didComplete(from component: DropInComponent) {
+    finish(resultCode: AdyenResponse.ResultCode.authorised)
+  }
+
+  /// Invoked when the drop in component failed with an error.
+  func didFail(with error: Error, from component: DropInComponent) {
+    finish(error: error)
+  }
+
+  /// Invoked when user closes a payment component.
+  func didCancel(component: PaymentComponent, from dropInComponent: DropInComponent) {
+    sendEvent(withName: "result", body: [
+      "type": "canceled-by-user",
+    ])
+  }
+}
+
+internal struct AdyenResponse: Decodable {
+  internal let resultCode: ResultCode
+  internal let action: Action?
+
+  internal init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.resultCode = try container.decode(ResultCode.self, forKey: .resultCode)
+    self.action = try container.decodeIfPresent(Action.self, forKey: .action)
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case resultCode
+    case action
+  }
+
+  enum ResultCode: String, Decodable {
+    case authorised = "Authorised"
+    case refused = "Refused"
+    case pending = "Pending"
+    case cancelled = "Cancelled"
+    case error = "Error"
+    case received = "Received"
+    case redirectShopper = "RedirectShopper"
+    case identifyShopper = "IdentifyShopper"
+    case challengeShopper = "ChallengeShopper"
+    case presentToShopper = "PresentToShopper"
   }
 }

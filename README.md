@@ -19,57 +19,62 @@ import AdyenDropIn from 'react-native-adyen-drop-in';
 
 const config = {
     environment: 'test', // test / liveEurope / liveUnitedStates / liveAustralia
-    clientKey: 'xxxx_xxxxx...',
-    merchantAccount: 'XXXXX',
+    clientKey: 'YOUR_CLIENT_KEY',
     shopperLocale: 'en_US',
     amount: {currency: 'EUR', value: 2500}, // 25€
-    scheme: {
-        publicKey: 'xxxxx...', // client encryption public key
+    countryCode: 'GB', // The code of the country in which the payment is made (in ISO-3166-1 alpha-2 format)
+    returnUrl: 'your_custom_scheme://custom/url', // only for iOS
+    card: { // optional configuration for card payment
         showsHolderNameField: true,
         showsStorePaymentMethodField: true,
+        shopperReference: 'unique_shopper_id',
+    },
+    applePay: {
+        merchantIdentifier: 'your.apple.pay.merchant.id',
+        summaryLabel: 'Total',
     },
 };
 
-// Open the Drop-in component by providing a config and the
-// available payment methods.
+// Open the Drop-in component by providing a config and the available
+// payment methods
 AdyenDropIn.startPayment(paymentMethodJson, config);
 
-// Provide the Drop-in component the response of your server.
-AdyenDropIn.handleResponse(response)
+// When the payment form is submitted the Drop-in component sends a
+// `payment` event containing the data that needs to be sent in the
+// `/payments` request
+AdyenDropIn.addListener('payment', data => {
+    // data format:
+    // {
+    //    paymentMethod: { ... },
+    //    storePaymentMethod: true / false,
+    //    returnUrl: '...', // on android the Drop-in provides its custom url
+    // }
 
-// Register a listener when payment form is submitted
-AdyenDropIn.addListener('payment', response => {})
-/**
- * response {
- *  data: {
- *      paymentMethod: {
- *          type: "scheme",
- *          recurringDetailReference: string
- *      },
- *      storePaymentMethod: true,
- *  }
- * }
- */
+    // make the `/payments` request and hand back the response:
+    AdyenDropIn.handleResponse(response);
+});
 
-// Register a listener on Adyen3DS2Component and RedirectComponent responses
-AdyenDropIn.addListener('payment-details', response => {})
-/**
- * response {
- *  data: {
- *      paymentData,
- *      details,
- *  }
- * }
- */
+// When some additional payment action is completed a `payment-details`
+// event is sent with the data that needs to be sent in the
+// `/payments/details` request
+AdyenDropIn.addListener('payment-details', data => {
+    // data format:
+    // {
+    //    paymentData: ...,
+    //    details: { ... },
+    // }
 
-// Register a listener on payment failures
-AdyenDropIn.addListener('error', error => {})
-/**
- * error {
- *  message: string, // error message
- *  error: string // exception message
- * }
- */
+    // make the `/payments/details` request and hand back the response:
+    AdyenDropIn.handleResponse(response);
+});
+
+// The `result` event is sent when the payment is over
+AdyenDropIn.addListener('result', data => {
+    // `data.type` is one of:
+    //  * 'finished' (check `data.result` for the result code)
+    //  * 'error' (details in `data.message`) 
+    //  * 'canceled-by-user'
+});
 
 ```
 
