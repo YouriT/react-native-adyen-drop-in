@@ -105,25 +105,25 @@ class AdyenDropInPayment: RCTEventEmitter {
       self.dropInComponent?.finalizeIfNeeded(with: success)
       self.dropInComponent?.viewController.presentingViewController?.dismiss(animated: true, completion: {
         self.dropInComponent = nil
+        if resultCode != nil {
+          self.sendEvent(withName: "result", body: [
+            "type": "finished",
+            "result": resultCode?.rawValue,
+          ])
+        } else if error != nil {
+          self.sendEvent(withName: "result", body: [
+            "type": "error",
+            "message": error?.localizedDescription,
+            "detail": String(describing: error),
+          ])
+        }
       })
-    }
-    if resultCode != nil {
-      sendEvent(withName: "result", body: [
-        "type": "finished",
-        "result": resultCode?.rawValue,
-      ])
-    } else if error != nil {
-      sendEvent(withName: "result", body: [
-        "type": "error",
-        "message": error?.localizedDescription,
-        "detail": String(describing: error),
-      ])
     }
   }
 
   func decode<T: Decodable>(_ obj: NSDictionary?) throws -> T {
-    if !JSONSerialization.isValidJSONObject(obj) { throw UnknownError() }
-    return try Coder.decode(JSONSerialization.data(withJSONObject: obj))
+    if !JSONSerialization.isValidJSONObject(obj as Any) { throw UnknownError() }
+    return try Coder.decode(JSONSerialization.data(withJSONObject: obj as Any))
   }
 
   func encode<T: Encodable>(_ obj: T) -> [String: Any] {
@@ -143,14 +143,14 @@ extension AdyenDropInPayment : DropInComponentDelegate {
     sendEvent(withName: "payment", body: [
       "paymentMethod": encode(data.paymentMethod.encodable),
       "storePaymentMethod": data.storePaymentMethod,
-      "returnUrl": returnUrl,
+      "returnUrl": returnUrl as Any,
     ])
   }
 
   /// Invoked when additional details have been provided for a payment method.
   func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
     sendEvent(withName: "payment-details", body: [
-      "paymentData": data.paymentData,
+      "paymentData": data.paymentData as Any,
       "details": encode(data.details.encodable),
     ])
   }
