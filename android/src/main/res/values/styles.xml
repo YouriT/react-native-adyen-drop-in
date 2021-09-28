@@ -1,6 +1,0 @@
-<resources>
-    <style name="AdyenCheckout" parent="AppTheme">
-        <item name="colorAccent">@color/primaryColor</item>
-        <item name="android:backgroundDimAmount">0.2</item>
-    </style>
-</resources>

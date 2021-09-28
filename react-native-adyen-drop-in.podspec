@@ -18,7 +18,7 @@ Pod::Spec.new do |s|
   s.preserve_paths  = 'LICENSE', 'README.md'
   s.source_files    = "ios/**/*.{h,m,swift}"
 
-  s.dependency 'React'
-  s.dependency 'Adyen', '~> 4.1.0'
+  s.dependency 'React-Core'
+  s.dependency 'Adyen', '4.1.0'
 end
   
