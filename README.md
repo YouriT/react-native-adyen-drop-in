@@ -24,6 +24,7 @@ const config = {
     amount: {currency: 'EUR', value: 2500}, // 25€
     countryCode: 'GB', // The code of the country in which the payment is made (in ISO-3166-1 alpha-2 format)
     returnUrl: 'your_custom_scheme://custom/url', // only for iOS
+    skipListWhenSinglePaymentMethod: true, // android only
     card: { // optional configuration for card payment
         showsHolderNameField: true,
         showsStorePaymentMethodField: true,

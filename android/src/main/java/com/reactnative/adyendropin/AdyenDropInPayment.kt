@@ -40,8 +40,8 @@ import com.adyen.checkout.redirect.RedirectComponent
 
 class AdyenDropInPayment(val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext), ActivityEventListener {
     companion object {
-        lateinit var INSTANCE: AdyenDropInPayment
-        lateinit var dropInService: AdyenDropInPaymentService
+        var INSTANCE: AdyenDropInPayment? = null
+        var dropInService: AdyenDropInPaymentService? = null
     }
 
     init {
@@ -71,6 +71,12 @@ class AdyenDropInPayment(val reactContext: ReactApplicationContext) : ReactConte
         val amountJson = config.getJSONObject("amount")
         val amount = Amount.SERIALIZER.deserialize(amountJson)
 
+        val skipListWhenSinglePaymentMethod = try {
+            config.getBoolean("skipListWhenSinglePaymentMethod")
+        } catch (t: Throwable) {
+            false
+        }
+
         val cardConfigBuilder = CardConfiguration.Builder(locale, env, clientKey)
         try {
             val showsHolderNameField = config.getJSONObject("card").getBoolean("showsHolderNameField")
@@ -97,6 +103,7 @@ class AdyenDropInPayment(val reactContext: ReactApplicationContext) : ReactConte
         builder.setEnvironment(env)
         builder.setShopperLocale(locale)
         builder.setAmount(amount)
+        builder.setSkipListWhenSinglePaymentMethod(skipListWhenSinglePaymentMethod)
         builder.addCardConfiguration(cardConfigBuilder.build())
         builder.add3ds2ActionConfiguration(adyen3DS2ConfigBuilder.build())
         builder.addGooglePayConfiguration(googlePayConfigBuilder.build())

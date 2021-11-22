@@ -129,5 +129,5 @@ dependencies {
   def supportLibVersion = getExtOrDefault('rootProject.ext.supportLibVersion','29.0.3')
   api 'com.facebook.react:react-native:+'
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-  implementation "com.adyen.checkout:drop-in:4.2.0"
+  implementation "com.adyen.checkout:drop-in:4.3.0"
 }
