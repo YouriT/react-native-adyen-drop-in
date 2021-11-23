@@ -177,7 +177,7 @@ extension AdyenDropInPayment: PaymentComponentDelegate {
     }
     if paymentMethods.regular.count > 1 {
       for p in paymentMethods.regular {
-        if p.name == "Credit Card" {
+        if p.name == name {
           paymentMethod = (p as! CardPaymentMethod)
           break
         }
