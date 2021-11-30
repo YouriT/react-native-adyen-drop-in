@@ -175,6 +175,12 @@ class AdyenDropInPayment(val reactContext: ReactApplicationContext) : ReactConte
         reactContext.getJSModule(emitterClass).emit(eventName, data)
     }
 
+    @ReactMethod
+    fun addListener(eventName: String) {}
+
+    @ReactMethod
+    fun removeListeners(count: Integer) {}
+
     object Util {
         fun convertJsonToMap(jsonObject: JSONObject): WritableMap {
             val map = WritableNativeMap()
