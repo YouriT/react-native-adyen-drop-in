@@ -35,7 +35,7 @@ class AdyenDropInPayment: RCTEventEmitter {
     let configuration = DropInComponent.Configuration(apiContext: apiContext)
 
     let amountDict: [String:Any] = config["amount"] as? [String:Any] ?? [:]
-    let amount = Amount(value: amountDict["value"] as! Int, currencyCode: amountDict["currency"] as! String)
+    let amount = Amount(value: (amountDict["value"] as! NSNumber).intValue, currencyCode: amountDict["currency"] as! String)
 
     let countryCode = config["countryCode"] as! String
     configuration.payment = Payment(amount: amount, countryCode: countryCode)
