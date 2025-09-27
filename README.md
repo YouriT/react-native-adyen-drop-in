@@ -1,4 +1,4 @@
-# React Native Adyen Drop-in
+# React Native Adyen Drop-In
 
 **React Native Adyen Drop-in** is a cross platform (Android & iOS) plugin enabling Adyen Drop-in integration in a React Native project.
 
