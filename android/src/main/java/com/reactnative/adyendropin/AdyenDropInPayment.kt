@@ -228,8 +228,22 @@ class AdyenDropInPayment(val reactContext: ReactApplicationContext) : ReactConte
                     RT.Boolean -> json.put(key, readableMap.getBoolean(key))
                     RT.Number -> json.put(key, readableMap.getDouble(key))
                     RT.String -> json.put(key, readableMap.getString(key))
-                    RT.Map -> json.put(key, convertMapToJson(readableMap.getMap(key)!!))
-                    RT.Array -> json.put(key, convertArrayToJson(readableMap.getArray(key)!!))
+                    RT.Map -> {
+                        val mapValue = readableMap.getMap(key)
+                        if (mapValue != null) {
+                            json.put(key, convertMapToJson(mapValue))
+                        } else {
+                            json.put(key, JSONObject.NULL)
+                        }
+                    }
+                    RT.Array -> {
+                        val arrayValue = readableMap.getArray(key)
+                        if (arrayValue != null) {
+                            json.put(key, convertArrayToJson(arrayValue))
+                        } else {
+                            json.put(key, JSONArray())
+                        }
+                    }
                 }
             }
             return json
@@ -243,8 +257,22 @@ class AdyenDropInPayment(val reactContext: ReactApplicationContext) : ReactConte
                     RT.Boolean -> json.put(readableArray.getBoolean(i))
                     RT.Number -> json.put(readableArray.getDouble(i))
                     RT.String -> json.put(readableArray.getString(i))
-                    RT.Map -> json.put(convertMapToJson(readableArray.getMap(i)))
-                    RT.Array -> json.put(convertArrayToJson(readableArray.getArray(i)))
+                    RT.Map -> {
+                        val mapValue = readableArray.getMap(i)
+                        if (mapValue != null) {
+                            json.put(convertMapToJson(mapValue))
+                        } else {
+                            json.put(JSONObject.NULL)
+                        }
+                    }
+                    RT.Array -> {
+                        val arrayValue = readableArray.getArray(i)
+                        if (arrayValue != null) {
+                            json.put(convertArrayToJson(arrayValue))
+                        } else {
+                            json.put(JSONArray())
+                        }
+                    }
                 }
             }
             return json
