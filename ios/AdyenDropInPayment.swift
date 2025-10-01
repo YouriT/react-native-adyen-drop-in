@@ -1,356 +1,205 @@
-//
-//  AdyenDropInPayment.swift
-//  ReactNativeAdyenDropin
-//
-//  Created by 罗立树 on 2019/9/27.
-//  Copyright © 2019 Facebook. All rights reserved.
-//
-
 import Adyen
 import Foundation
-import SafariServices
+import PassKit
 
 @objc(AdyenDropInPayment)
 class AdyenDropInPayment: RCTEventEmitter {
-  func dispatch(_ closure: @escaping () -> Void) {
-    if Thread.isMainThread {
-      closure()
-    } else {
-      DispatchQueue.main.async(execute: closure)
+  var dropInComponent: DropInComponent?
+  var returnUrl: String?
+
+  @objc override static func requiresMainQueueSetup() -> Bool {
+    return true
+  }
+
+  override func supportedEvents() -> [String]! {
+    return [
+      "payment",
+      "payment-details",
+      "result",
+    ]
+  }
+
+  func parseConfig(_ config: NSDictionary) -> DropInComponent.Configuration {
+    let env = config["environment"] as? String ?? "test"
+    let environment: Environment = {
+      if (env == "liveEurope") { return Environment.liveEurope }
+      else if (env == "liveUnitedStates") { return Environment.liveUnitedStates }
+      else if (env == "liveAustralia") { return Environment.liveAustralia }
+      else { return Environment.test }
+    }()
+
+    returnUrl = config["returnUrl"] as? String
+
+    let clientKey = config["clientKey"] as! String
+    let apiContext = APIContext(environment: environment, clientKey: clientKey)
+    let configuration = DropInComponent.Configuration(apiContext: apiContext)
+
+    let amountDict: [String:Any] = config["amount"] as? [String:Any] ?? [:]
+    let amount = Amount(value: (amountDict["value"] as! NSNumber).intValue, currencyCode: amountDict["currency"] as! String)
+
+    let countryCode = config["countryCode"] as! String
+    configuration.payment = Payment(amount: amount, countryCode: countryCode)
+
+    let card: [String:Any] = config["card"] as? [String:Any] ?? [:]
+    configuration.card.showsHolderNameField = card["showsHolderNameField"] as? Bool ?? false
+    configuration.card.showsStorePaymentMethodField = card["showsStorePaymentMethodField"] as? Bool ?? false
+
+    if let applePay: [String:Any] = config["applePay"] as? [String:Any] {
+      configuration.applePay = ApplePayComponent.Configuration(
+        summaryItems: [PKPaymentSummaryItem(
+          label: config["summaryLabel"] as? String ?? "Total",
+          amount: AmountFormatter.decimalAmount(
+            amount.value,
+            currencyCode: amount.currencyCode
+          ),
+          type: .final
+        )],
+        merchantIdentifier: applePay["merchantIdentifier"] as! String
+      )
+    }
+
+    return configuration
+  }
+
+  @objc func startPayment(_ paymentMethodsObj: NSDictionary, configObj: NSDictionary) {
+    let paymentMethods = try! decode(paymentMethodsObj) as PaymentMethods
+    let configuration = parseConfig(configObj)
+
+    dropInComponent = DropInComponent(paymentMethods: paymentMethods, configuration: configuration)
+    dropInComponent?.delegate = self
+
+    dispatch {
+      UIApplication.shared.keyWindow?.rootViewController?.adyen.topPresenter.present(
+        self.dropInComponent!.viewController,
+        animated: true
+      )
     }
   }
 
-  func requiresMainQueueSetup() -> Bool {
-    return true
+  @objc func handleResponse(_ responseObj: NSDictionary?) {
+    do {
+      let response = try decode(responseObj) as AdyenResponse
+      if let action = response.action {
+        dispatch {
+          self.dropInComponent?.handle(action)
+        }
+      } else {
+        finish(resultCode: response.resultCode)
+      }
+    } catch {
+      finish(error: error)
+    }
   }
-  var customCardComponent:CustomCardComponent?
-  var dropInComponent: DropInComponent?
-  var cardComponent: CardComponent?
-  var threeDS2Component: ThreeDS2Component?
-  var publicKey: String?
-  var env: Environment?
-  var isDropIn:Bool?
-  var envName: String?
-  var configuration: DropInComponent.PaymentMethodsConfiguration?
-  override func supportedEvents() -> [String]! {
-    return [
-      "onPaymentFail",
-      "onPaymentProvide",
-      "onPaymentSubmit",
-    ]
+
+  @objc func handleReturnUrl(_ url: String) {
+    if url.hasPrefix(returnUrl ?? "") {
+      dispatch {
+        RedirectComponent.applicationDidOpen(from: URL(string: url)!)
+      }
+    }
+  }
+
+  func finish(resultCode: AdyenResponse.ResultCode? = nil, error: Error? = nil) {
+    let success = resultCode == .authorised || resultCode == .received || resultCode == .pending
+    dispatch {
+      self.dropInComponent?.finalizeIfNeeded(with: success)
+      self.dropInComponent?.viewController.presentingViewController?.dismiss(animated: true, completion: {
+        self.dropInComponent = nil
+        if resultCode != nil {
+          self.sendEvent(withName: "result", body: [
+            "type": "finished",
+            "result": resultCode?.rawValue,
+          ])
+        } else if error != nil {
+          self.sendEvent(withName: "result", body: [
+            "type": "error",
+            "message": error?.localizedDescription,
+            "detail": String(describing: error),
+          ])
+        }
+      })
+    }
+  }
+
+  func decode<T: Decodable>(_ obj: NSDictionary?) throws -> T {
+    if !JSONSerialization.isValidJSONObject(obj as Any) { throw UnknownError() }
+    return try Coder.decode(JSONSerialization.data(withJSONObject: obj as Any))
+  }
+
+  func encode<T: Encodable>(_ obj: T) -> [String: Any] {
+    let data = try? JSONSerialization.jsonObject(with: Coder.encode(obj))
+    return data as? [String: Any] ?? [:]
+  }
+
+  func dispatch(_ closure: @escaping () -> Void) {
+    if Thread.isMainThread { closure() }
+    else { DispatchQueue.main.async(execute: closure) }
   }
 }
 
-extension AdyenDropInPayment: DropInComponentDelegate {
-  @objc func configPayment(_ publicKey: String, env: String) {
-    configuration = DropInComponent.PaymentMethodsConfiguration()
-    configuration?.card.publicKey = publicKey
-    self.publicKey = publicKey
-    configuration?.card.showsStorePaymentMethodField = false
-    envName = env
-    switch env {
-    case "live":
-      self.env = .live
-    default:
-      self.env = .test
-    }
-  }
-   @objc func encryptCard(_ cardNumber: String,expiryMonth:Int, expiryYear:Int,securityCode:String,resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock)  {
-       let card = CardEncryptor.Card(number: cardNumber,
-                                     securityCode: securityCode,
-                                     expiryMonth:  String(expiryMonth),
-                                     expiryYear: "20" + String(expiryYear))
-     let encryptedCard = CardEncryptor.encryptedCard(for: card, publicKey: self.publicKey!)
-     
-     let resultMap:Dictionary? = [
-       "encryptedNumber":encryptedCard.number,
-       "encryptedExpiryMonth":encryptedCard.expiryMonth,
-       "encryptedExpiryYear":encryptedCard.expiryYear,
-       "encryptedSecurityCode":encryptedCard.securityCode,
-     ]
-     resolve(resultMap)
-   }
-
-  @objc func paymentMethods(_ paymentMethodsJson: String) {
-    self.isDropIn = true
-    let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
-    let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
-    let dropInComponent = DropInComponent(paymentMethods: paymentMethods!,
-                                          paymentMethodsConfiguration: configuration!)
-    self.dropInComponent = dropInComponent
-    dropInComponent.delegate = self
-    dropInComponent.environment = self.env!
-
-    dispatch {
-      UIApplication.shared.delegate?.window??.rootViewController!.present(dropInComponent.viewController, animated: true)
-    }
-  }
-
-  func didSubmit(_ data: PaymentComponentData, from component: DropInComponent) {
-    component.viewController.dismiss(animated: true)
-    var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
-    paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
-    let resultData = ["paymentMethod": paymentMethodMap, "storePaymentMethod": data.storePaymentMethod] as [String: Any]
-    
-    sendEvent(
-      withName: "onPaymentSubmit",
-      body: [
-        "isDropIn": self.isDropIn,
-        "env": self.envName,
-        "data": resultData,
-      ]
-    )
+extension AdyenDropInPayment : DropInComponentDelegate {
+  /// Invoked when a payment method is selected and the initial details have been filled.
+  func didSubmit(_ data: PaymentComponentData, for paymentMethod: PaymentMethod, from component: DropInComponent) {
+    sendEvent(withName: "payment", body: [
+      "paymentMethod": encode(data.paymentMethod.encodable),
+      "storePaymentMethod": data.storePaymentMethod,
+      "returnUrl": returnUrl as Any,
+    ])
   }
 
   /// Invoked when additional details have been provided for a payment method.
-  ///
-  /// - Parameters:
-  ///   - data: The additional data supplied by the drop in component..
-  ///   - component: The drop in component from which the additional details were provided.
   func didProvide(_ data: ActionComponentData, from component: DropInComponent) {
-    component.viewController.dismiss(animated: true)
-    let resultData = ["details": data.details.dictionaryRepresentation, "paymentData": data.paymentData] as [String: Any]
-    sendEvent(
-      withName: "onPaymentProvide",
-      body: [
-        "isDropIn": self.isDropIn,
-        "env": self.envName,
-        "data": resultData,
-      ]
-    )
+    sendEvent(withName: "payment-details", body: [
+      "paymentData": data.paymentData as Any,
+      "details": encode(data.details.encodable),
+    ])
+  }
+
+  /// Invoked when the action component finishes,
+  /// without any further steps needed by the application, for example in case of voucher payment methods.
+  /// The application just needs to dismiss the `DropInComponent`.
+  func didComplete(from component: DropInComponent) {
+    finish(resultCode: AdyenResponse.ResultCode.authorised)
   }
 
   /// Invoked when the drop in component failed with an error.
-  ///
-  /// - Parameters:
-  ///   - error: The error that occurred.
-  ///   - component: The drop in component that failed.
   func didFail(with error: Error, from component: DropInComponent) {
-    component.viewController.dismiss(animated: true)
-    sendEvent(
-      withName: "onPaymentFail",
-      body: [
-        "isDropIn": self.isDropIn,
-        "env": self.envName,
-        "msg": error.localizedDescription,
-        "error": String(describing: error),
-      ]
-    )
+    finish(error: error)
+  }
+
+  /// Invoked when user closes a payment component.
+  func didCancel(component: PaymentComponent, from dropInComponent: DropInComponent) {
+    sendEvent(withName: "result", body: [
+      "type": "canceled-by-user",
+    ])
   }
 }
 
-extension AdyenDropInPayment: PaymentComponentDelegate {
-  func getStoredCardPaymentMethod(_ paymentMethods: PaymentMethods, index: Int) -> StoredCardPaymentMethod {
-    var paymentMethod: StoredCardPaymentMethod?
-    if paymentMethods.stored.count == 1 {
-      return paymentMethods.stored[0] as! StoredCardPaymentMethod
-    }
-    if paymentMethods.stored.count > 1 {
-      paymentMethod = paymentMethods.stored[index] as! StoredCardPaymentMethod
-    }
-    return paymentMethod!
+internal struct AdyenResponse: Decodable {
+  internal let resultCode: ResultCode
+  internal let action: Action?
+
+  internal init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.resultCode = try container.decode(ResultCode.self, forKey: .resultCode)
+    self.action = try container.decodeIfPresent(Action.self, forKey: .action)
   }
 
-  func getCardPaymentMethodByName(_ paymentMethods: PaymentMethods, name _: String) -> CardPaymentMethod {
-    var paymentMethod: CardPaymentMethod?
-    if paymentMethods.regular.count == 1 {
-      return paymentMethods.regular[0] as! CardPaymentMethod
-    }
-    if paymentMethods.regular.count > 1 {
-      for p in paymentMethods.regular {
-        if p.name == "Credit Card" {
-          paymentMethod = (p as! CardPaymentMethod)
-          break
-        }
-      }
-    }
-    return paymentMethod!
+  private enum CodingKeys: String, CodingKey {
+    case resultCode
+    case action
   }
 
-  @objc func storedCardPaymentMethod(_ paymentMethodsJson: String, index: Int) {
-    self.isDropIn = false
-    self.threeDS2Component = nil
-    self.cardComponent?.viewController.dismiss(animated: true)
-    let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
-    let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
-    let cardPaymentMethod: StoredCardPaymentMethod? = self.getStoredCardPaymentMethod(paymentMethods!, index: index)
-    let cardComponent = CardComponent(paymentMethod: cardPaymentMethod!,
-                                      publicKey: self.publicKey!)
-    self.cardComponent = cardComponent
-    // Replace CardComponent with the payment method Component that you want to add.
-    // Check specific payment method pages to confirm if you need to configure additional required parameters.
-    // For example, to enable the Card form, you need to provide your Client Encryption Public Key.
-    cardComponent.delegate = self
-    cardComponent.environment = env!
-    // When you're ready to go live, change this to .live
-    // or to other environment values described in https://adyen.github.io/adyen-ios/Docs/Structs/Environment.html
-    dispatch { UIApplication.shared.delegate?.window??.rootViewController!.present(cardComponent.viewController, animated: true)
-    }
-  }
-  @objc func contractPaymentMethod(_ paymentMethodsJson: String,index: Int) {
-    self.isDropIn = false
-    self.threeDS2Component = nil
-    let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
-    let paymentMethods:PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
-    let cardPaymentMethod:StoredCardPaymentMethod? = self.getStoredCardPaymentMethod(paymentMethods!,index: index)
-    var paymentMethodMap:Dictionary? = ["type": "scheme","recurringDetailReference":cardPaymentMethod?.identifier]
-    let resultData = ["paymentMethod":paymentMethodMap,"storePaymentMethod":true] as [String : Any]
-   self.sendEvent(
-     withName: "onPaymentSubmit",
-     body: [
-       "isDropIn":self.isDropIn,
-       "env":self.envName,
-       "data": resultData
-     ]
-   )
-  }
-    
-
-    @objc func cardPaymentMethod(_ paymentMethodsJson: String, name: String, showHolderField: Bool, showStoreField: Bool,buttonTitle: String) {
-    self.isDropIn = false
-    self.threeDS2Component = nil
-    self.customCardComponent?.viewController.dismiss(animated: true)
-    let jsonData: Data? = paymentMethodsJson.data(using: String.Encoding.utf8) ?? Data()
-    let paymentMethods: PaymentMethods? = try? JSONDecoder().decode(PaymentMethods.self, from: jsonData!)
-    let cardPaymentMethod: CardPaymentMethod? = self.getCardPaymentMethodByName(paymentMethods!, name: name)
-
-    let cardComponent = CustomCardComponent(paymentMethod:cardPaymentMethod!,
-                                            publicKey: self.publicKey!,buttonTitle: buttonTitle)
-    self.customCardComponent = cardComponent
-    self.customCardComponent!.showsStorePaymentMethodField = showStoreField
-    self.customCardComponent!.showsHolderNameField = showHolderField
-    self.customCardComponent!.delegate = self
-    self.customCardComponent!.environment = self.env!
-    
-    // When you're ready to go live, change this to .live
-    // or to other environment values described in https://adyen.github.io/adyen-ios/Docs/Structs/Environment.html
-    dispatch {
-      UIApplication.shared.delegate?.window??.rootViewController!.present(cardComponent.viewController, animated: true)
-    }
-  }
-
-  /// Invoked when the payment component finishes, typically by a user submitting their payment details.
-  ///
-  /// - Parameters:
-  ///   - data: The data supplied by the payment component.
-  ///   - component: The payment component from which the payment details were submitted.
-  func didSubmit(_ data: PaymentComponentData, from _: PaymentComponent) {
-    self.cardComponent?.viewController.dismiss(animated: true)
-    self.customCardComponent?.viewController.dismiss(animated: true)
-
-    var paymentMethodMap: Dictionary? = data.paymentMethod.dictionaryRepresentation
-    paymentMethodMap!["recurringDetailReference"] = paymentMethodMap!["storedPaymentMethodId"]
-    let resultData = ["paymentMethod": paymentMethodMap, "storePaymentMethod": data.storePaymentMethod] as [String: Any]
-
-    sendEvent(
-      withName: "onPaymentSubmit",
-      body: [
-        "isDropIn": self.isDropIn,
-        "env": self.envName,
-        "data": resultData,
-      ]
-    )
-  }
-
-  /// Invoked when the payment component fails.
-  ///
-  /// - Parameters:
-  ///   - error: The error that occurred.
-  ///   - component: The payment component that failed.
-  func didFail(with error: Error, from _: PaymentComponent) {
-    cardComponent?.viewController.dismiss(animated: true)
-    customCardComponent?.viewController.dismiss(animated: true)
-
-    sendEvent(
-      withName: "onPaymentFail",
-      body: [
-        "isDropIn": self.isDropIn,
-        "env": self.envName,
-        "msg": error.localizedDescription,
-        "error": String(describing: error),
-      ]
-    )
-  }
-}
-
-extension AdyenDropInPayment: ActionComponentDelegate {
-  @objc func handleAction(_ actionJson: String) {
-    if(actionJson == nil||actionJson.count<=0){
-        return;
-    }
-    var parsedJson = actionJson.replacingOccurrences(of: "THREEDS2FINGERPRINT", with: "threeDS2Fingerprint")
-    parsedJson = actionJson.replacingOccurrences(of: "THREEDS2CHALLENGE", with: "threeDS2Challenge")
-    parsedJson = actionJson.replacingOccurrences(of: "REDIRECT", with: "redirect")
-    if(self.isDropIn!){
-        let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
-        let action = try? JSONDecoder().decode(Action.self, from: actionData!)
-        dropInComponent?.handle(action!)
-      return;
-    }
-    let actionData: Data? = parsedJson.data(using: String.Encoding.utf8) ?? Data()
-    let action:Action? = try! JSONDecoder().decode(Action.self, from: actionData!)
-
-    switch action {
-    /// Indicates the user should be redirected to a URL.
-    case .redirect(let executeAction):
-       let redirectComponent:RedirectComponent = RedirectComponent(action: executeAction)
-       redirectComponent.delegate = self
-      break;
-      /// Indicates a 3D Secure device fingerprint should be taken.
-    case .threeDS2Fingerprint(let executeAction):
-      if(self.threeDS2Component == nil){
-        self.threeDS2Component = ThreeDS2Component()
-        self.threeDS2Component!.delegate = self
-      }
-      self.threeDS2Component!.handle(executeAction)
-      break;
-      /// Indicates a 3D Secure challenge should be presented.
-    case .threeDS2Challenge(let executeAction):
-      if(self.threeDS2Component == nil){
-        self.threeDS2Component = ThreeDS2Component()
-        self.threeDS2Component!.delegate = self
-      }
-      self.threeDS2Component?.handle(executeAction)
-      break;
-    default :
-      break;
-    }
-  }
-  @objc func handlePaymentResult(_ paymentResult: String) {
-  }
-
-  /// Invoked when the action component finishes
-  /// and provides the delegate with the data that was retrieved.
-  ///
-  /// - Parameters:
-  ///   - data: The data supplied by the action component.
-  ///   - component: The component that handled the action.
-  func didProvide(_ data: ActionComponentData, from _: ActionComponent) {
-    let resultData = ["details": data.details.dictionaryRepresentation, "paymentData": data.paymentData] as [String: Any]
-    sendEvent(
-      withName: "onPaymentProvide",
-      body: [
-        "isDropIn": self.isDropIn as Any,
-        "env": self.envName as Any,
-        "data": resultData,
-      ]
-    )
-  }
-
-  /// Invoked when the action component fails.
-  ///
-  /// - Parameters:
-  ///   - error: The error that occurred.
-  ///   - component: The component that failed.
-  func didFail(with error: Error, from _: ActionComponent) {
-    sendEvent(
-      withName: "onPaymentFail",
-      body: [
-        "isDropIn": self.isDropIn as Any,
-        "env": self.envName as Any,
-        "msg": error.localizedDescription,
-        "error": String(describing: error),
-      ]
-    )
+  enum ResultCode: String, Decodable {
+    case authorised = "Authorised"
+    case refused = "Refused"
+    case pending = "Pending"
+    case cancelled = "Cancelled"
+    case error = "Error"
+    case received = "Received"
+    case redirectShopper = "RedirectShopper"
+    case identifyShopper = "IdentifyShopper"
+    case challengeShopper = "ChallengeShopper"
+    case presentToShopper = "PresentToShopper"
   }
 }

@@ -1,192 +1,36 @@
-import { NativeEventEmitter, NativeModules } from "react-native";
+import { NativeModules, NativeEventEmitter, Platform, Linking } from 'react-native';
+const { AdyenDropInPayment } = NativeModules;
+const eventEmitter = new NativeEventEmitter(AdyenDropInPayment);
 
-const AdyenDropIn = NativeModules.AdyenDropInPayment;
-const EventEmitter = new NativeEventEmitter(AdyenDropIn);
-const eventMap = {};
-let onPaymentProvideListener;
-let onPaymentFailListener;
-let onPaymentSubmitListener;
-let onPaymentCancelListener;
-const addListener = (key, listener) => {
-  if (eventMap[key]) {
-    return eventMap[key];
-  }
-  eventMap[key] = listener;
-  EventEmitter.addListener(key, listener);
-};
 export default {
   /**
-   * Starting payment process.
-   * @returns {*}
+   * Start Drop-in
+   * @param {object} paymentMethodJson
+   * @param {object} config
    */
-  configPayment(publicKey, env) {
-    return AdyenDropIn.configPayment(publicKey, env);
-  },
-  /**
-   * list paymentMethods
-   *
-   * @param {String} encodedToken
-   *
-   * @returns {*}
-   */
-  paymentMethods(paymentMethodJson) {
-    if (typeof paymentMethodJson === "object") {
-      paymentMethodJson = JSON.stringify(paymentMethodJson);
+  startPayment(paymentMethodJson, config) {
+    if (Platform.OS === 'ios' && !this.handleReturnUrl) {
+      this.handleReturnUrl = ({ url }) => AdyenDropInPayment.handleReturnUrl(url);
+      Linking.addEventListener('url', this.handleReturnUrl);
     }
-    this._validateParam(paymentMethodJson, "paymentMethods", "string");
-    return AdyenDropIn.paymentMethods(paymentMethodJson);
-  },
-  cardPaymentMethod(
-    paymentMethodJson,
-    name,
-    showHolderField,
-    showStoreField,
-    buttonTitle
-  ) {
-    if (typeof paymentMethodJson === "object") {
-      paymentMethodJson = JSON.stringify(paymentMethodJson);
-    }
-    this._validateParam(paymentMethodJson, "cardPaymentMethod", "string");
-    showHolderField = showHolderField || false;
-    showStoreField = showStoreField || false;
-    buttonTitle = buttonTitle || "";
-    return AdyenDropIn.cardPaymentMethod(
-      paymentMethodJson,
-      name,
-      showHolderField,
-      showStoreField,
-      buttonTitle
-    );
+    return AdyenDropInPayment.startPayment(paymentMethodJson, config);
   },
 
   /**
-   * use card paymentMethod
-   * @param paymentMethodJson
-   * @returns {*}
+   * Handle server response
+   * @param {object} response
    */
-  storedCardPaymentMethod(paymentMethodJson, index) {
-    if (typeof paymentMethodJson === "object") {
-      paymentMethodJson = JSON.stringify(paymentMethodJson);
-    }
-    this._validateParam(paymentMethodJson, "storedCardPaymentMethod", "string");
-    index = index || 0;
-    return AdyenDropIn.storedCardPaymentMethod(paymentMethodJson, index);
+  handleResponse(response) {
+    return AdyenDropInPayment.handleResponse(response);
   },
-  contractPaymentMethod(paymentMethodJson, index) {
-    if (typeof paymentMethodJson === "object") {
-      paymentMethodJson = JSON.stringify(paymentMethodJson);
-    }
-    this._validateParam(paymentMethodJson, "contractPaymentMethod", "string");
-    index = index || 0;
-    return AdyenDropIn.contractPaymentMethod(paymentMethodJson, index);
+  addListener(eventName, listener) {
+    return eventEmitter.addListener(eventName, listener);
   },
-  /**
-   * handle Action from payments
-   * @param actionJson
-   * @returns {*}
-   */
-  handleAction(actionJson) {
-    if (typeof actionJson === "object") {
-      actionJson = JSON.stringify(actionJson);
-    }
-    this._validateParam(actionJson, "handleAction", "string");
-    return AdyenDropIn.handleAction(actionJson);
-  },
-  handlePaymentResult(paymentJson) {
-    if (typeof paymentJson === "object") {
-      paymentJson = JSON.stringify(paymentJson);
-    }
-    this._validateParam(paymentJson, "handlePaymentResult", "string");
-    return AdyenDropIn.handlePaymentResult(paymentJson);
-  },
-  encryptCard(cardNumber, expiryMonth, expiryYear, securityCode) {
-    return AdyenDropIn.encryptCard(
-      cardNumber,
-      expiryMonth,
-      expiryYear,
-      securityCode
-    );
-  },
-  /**
-   *  call when need to do more action
-   */
-  onPaymentProvide(mOnPaymentProvide) {
-    this._validateParam(mOnPaymentProvide, "onPaymentProvide", "function");
-    onPaymentProvideListener = addListener("onPaymentProvide", e => {
-      mOnPaymentProvide(e);
-    });
-  },
-  // /**
-  //  * call when cancel a payment
-  //  * @param mOnPaymentCancel
-  //  */
-  // onPaymentCancel(mOnPaymentCancel) {
-  //     this._validateParam(
-  //         mOnPaymentCancel,
-  //         'onPaymentCancel',
-  //         'function',
-  //     );
-  //     onPaymentCancelListener = events.addListener(
-  //         'mOnPaymentCancel',
-  //         e => {
-  //             mOnPaymentCancel(e);
-  //         },
-  //     );
-  // },
-  /**
-   * call when payment fail
-   * @param {mOnError} mOnError
-   */
-  onPaymentFail(mOnPaymentFail) {
-    this._validateParam(mOnPaymentFail, "onPaymentFail", "function");
-    if (onPaymentFailListener) {
-      EventEmitter.removeListener(onPaymentFailListener);
-    }
-    onPaymentFailListener = addListener("onPaymentFail", e => {
-      mOnPaymentFail(e);
-    });
-  },
-  /**
-   * call when payment submit ,send to server do payments
-   */
-  onPaymentSubmit(mOnPaymentSubmit) {
-    this._validateParam(mOnPaymentSubmit, "onPaymentSubmit", "function");
-    if (onPaymentSubmitListener) {
-      EventEmitter.removeListener(onPaymentSubmitListener);
-    }
-    onPaymentSubmitListener = addListener("onPaymentSubmit", e => {
-      mOnPaymentSubmit(e);
-    });
-  },
-
-  /**
-   * @param {*} param
-   * @param {String} methodName
-   * @param {String} requiredType
-   * @private
-   */
-  _validateParam(param, methodName, requiredType) {
-    if (typeof param !== requiredType) {
-      throw new Error(
-        `Error: AdyenDropIn.${methodName}() requires a ${
-          requiredType === "function" ? "callback function" : requiredType
-        } but got a ${typeof param}`
-      );
+  listenerCount(eventName) {
+    if (eventEmitter.listenerCount) {
+      return eventEmitter.listenerCount(eventName);
+    } else {
+      return eventEmitter.listeners(eventName).length;
     }
   },
-  events: EventEmitter,
-  removeListeners() {
-    if (onPaymentProvideListener) {
-      EventEmitter.removeListener(onPaymentProvideListener);
-    }
-    if (onPaymentFailListener) {
-      EventEmitter.removeListener(onPaymentFailListener);
-    }
-    if (onPaymentSubmitListener) {
-      EventEmitter.removeListener(onPaymentSubmitListener);
-    }
-    if (onPaymentCancelListener) {
-      EventEmitter.removeListener(onPaymentCancelListener);
-    }
-  }
 };
